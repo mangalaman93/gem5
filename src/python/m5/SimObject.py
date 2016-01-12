@@ -1196,9 +1196,9 @@ class SimObject(object):
     # Add a new child to this object.
     def add_child(self, name, child):
         child = coerceSimObjectOrVector(child)
-        if child.has_parent():
-            warn("add_child('%s'): child '%s' already has parent", name,
-                child.get_name())
+        #if child.has_parent():
+        #    warn("add_child('%s'): child '%s' already has parent", name,
+        #        child.get_name())
         if self._children.has_key(name):
             # This code path had an undiscovered bug that would make it fail
             # at runtime. It had been here for a long time and was only
