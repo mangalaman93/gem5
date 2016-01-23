@@ -40,9 +40,6 @@ class Torus(SimpleTopology):
         self.nodes = controllers
 
     # Makes a generic torus assuming an equal number of cache and directory cntrls
-    # Assuming a folded-torus on-chip layout (as shown on gem5 wiki).
-    # All links (including the wrap-around ones) are of equal length, double that
-    # of a mesh. Thus, each link is assigned a latency of 2 cycles.
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
@@ -105,10 +102,11 @@ class Torus(SimpleTopology):
                     east_id = (col + 1) + (row * num_columns)
                 else:
                     east_id = (row * num_columns)
+                print "Router " + str(east_id) + " created a link to " +  str(west_id)
                 int_links.append(IntLink(link_id=link_count,
                                         node_a=routers[east_id],
                                         node_b=routers[west_id],
-                                        latency=2,
+                                        latency=1,
                                         weight=1))
                 link_count += 1
 
@@ -119,10 +117,11 @@ class Torus(SimpleTopology):
                     south_id = col + ((row + 1) * num_columns)
                 else:
                     south_id = col
+                print "Router " + str(north_id) + " created a link to " +  str(south_id)
                 int_links.append(IntLink(link_id=link_count,
                                         node_a=routers[north_id],
                                         node_b=routers[south_id],
-                                        latency=2,
+                                        latency=1,
                                         weight=2))
                 link_count += 1
 
