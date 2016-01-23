@@ -42,6 +42,12 @@ BaseGarnetNetwork::BaseGarnetNetwork(const Params *p)
     if (m_enable_fault_model)
         fault_model = p->fault_model;
 
+    // TK: commented the following since bandwidth_factor is 16 by default
+    // (and hard to change as it is per link and requires changes to topology file)
+    // Garnet does not use bandwidth_factor anywhere.
+    // Changing m_ni_flit_size is equivalent to changing channel width (=> number of flits per packet).
+
+    /*
     // Currently Garnet only supports uniform bandwidth for all
     // links and network interfaces.
     for (std::vector<BasicExtLink*>::const_iterator i = p->ext_links.begin();
@@ -58,6 +64,7 @@ BaseGarnetNetwork::BaseGarnetNetwork(const Params *p)
             fatal("Garnet only supports uniform bw across all links and NIs\n");
         }
     }
+    */
 }
 
 void

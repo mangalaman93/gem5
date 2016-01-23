@@ -71,6 +71,10 @@ def define_options(parser):
                       help="the number of rows in the mesh topology")
     parser.add_option("--garnet-network", type="choice",
                       choices=['fixed', 'flexible'], help="'fixed'|'flexible'")
+    parser.add_option("--channel-width-bits", action="store", type="int", default=128,
+                      help="channel width in bits for all links inside garnet network.")
+    parser.add_option("--vcs-per-vnet", action="store", type="int", default=4,
+                      help="number of virtual channels per virtual network inside garnet network.")
     parser.add_option("--network-fault-model", action="store_true", default=False,
                       help="enable network fault model: see src/mem/ruby/network/fault_model/")
 
@@ -205,6 +209,15 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
     # Create the network topology
     topology.makeTopology(options, network, IntLinkClass, ExtLinkClass,
             RouterClass)
+
+    # Garnet Options
+    if options.channel_width_bits != None: # only valid for garnet network
+        assert(options.garnet_network != None)
+        network.ni_flit_size = options.channel_width_bits / 8
+
+    if options.vcs_per_vnet != None: # only valid for garnet network
+        assert(options.garnet_network != None)
+        network.vcs_per_vnet = options.vcs_per_vnet
 
     if options.garnet_network is None:
         assert(NetworkClass == SimpleNetwork)
