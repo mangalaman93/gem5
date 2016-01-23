@@ -42,8 +42,8 @@ class NetworkLink(ClockedObject):
                               "virtual channels per virtual network")
     virt_nets = Param.Int(Parent.number_of_virtual_networks,
                           "number of virtual networks")
-    channel_width = Param.Int(Parent.bandwidth_factor,
-                              "channel width == bw factor")
+    channel_width = Param.Int(Parent.ni_flit_width,
+                              "channel width == ni_flit_width")
 
 # Interior fixed pipeline links between routers
 class GarnetIntLink(BasicIntLink):
