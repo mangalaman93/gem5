@@ -157,6 +157,7 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
             // flitisized and an output vc is acquired
             net_msg_ptr->getDestination().removeNetDest(personal_dest);
         }
+        m_net_ptr->increment_injected_packets(vnet);
         for (int i = 0; i < num_flits; i++) {
             m_net_ptr->increment_injected_flits(vnet);
             flit *fl = new flit(i, vc, vnet, num_flits, new_msg_ptr,
@@ -277,8 +278,14 @@ NetworkInterface::wakeup()
         Cycles network_delay = curCycle() - t_flit->get_enqueue_time();
         Cycles queueing_delay = t_flit->get_delay();
 
-        m_net_ptr->increment_network_latency(network_delay, vnet);
-        m_net_ptr->increment_queueing_latency(queueing_delay, vnet);
+        m_net_ptr->increment_flit_network_latency(network_delay, vnet);
+        m_net_ptr->increment_flit_queueing_latency(queueing_delay, vnet);
+        if (t_flit->get_type() == TAIL_ || t_flit->get_type() == HEAD_TAIL_) {
+            m_net_ptr->increment_received_packets(vnet);
+            m_net_ptr->increment_packet_network_latency(network_delay, vnet);
+            m_net_ptr->increment_packet_queueing_latency(queueing_delay, vnet);
+        }
+
         delete t_flit;
     }
 }
