@@ -1,0 +1,6 @@
+Make router 1-cycle
+
+Route in every flit.
+Direction.
+
+rename FIXEDPIPELINE to ONECYCLE

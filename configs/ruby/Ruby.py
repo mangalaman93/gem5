@@ -70,7 +70,7 @@ def define_options(parser):
     parser.add_option("--mesh-rows", type="int", default=1,
                       help="the number of rows in the mesh topology")
     parser.add_option("--garnet-network", type="choice",
-                      choices=['fixed', 'flexible'], help="'fixed'|'flexible'")
+                      choices=['onecycle', 'fixed', 'flexible'], help="'onecycle' | 'fixed'|'flexible'")
     parser.add_option("--channel-width-bits", action="store", type="int", default=128,
                       help="channel width in bits for all links inside garnet network.")
     parser.add_option("--vcs-per-vnet", action="store", type="int", default=4,
@@ -157,7 +157,14 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
     ruby = system.ruby
 
     # Set the network classes based on the command line options
-    if options.garnet_network == "fixed":
+    if options.garnet_network == "onecycle":
+        NetworkClass = GarnetNetwork
+        IntLinkClass = GarnetIntLink
+        ExtLinkClass = GarnetExtLink
+        RouterClass = GarnetRouter
+        InterfaceClass = GarnetNetworkInterface
+
+    elif options.garnet_network == "fixed":
         NetworkClass = GarnetNetwork_d
         IntLinkClass = GarnetIntLink_d
         ExtLinkClass = GarnetExtLink_d
