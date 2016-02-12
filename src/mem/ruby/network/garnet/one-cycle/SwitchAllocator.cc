@@ -84,6 +84,8 @@ SwitchAllocator::wakeup()
 
     clear_request_vector();
     check_for_wakeup();
+
+    // One-cycle SA/VA + ST
     m_router->switch_traversal();
 }
 
