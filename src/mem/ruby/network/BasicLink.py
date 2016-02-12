@@ -54,4 +54,6 @@ class BasicIntLink(BasicLink):
     cxx_header = "mem/ruby/network/BasicLink.hh"
     node_a = Param.BasicRouter("Router on one end")
     node_b = Param.BasicRouter("Router on other end")
+    node_a_port = Param.Int(-1, "Router a port direction")
+    node_b_port = Param.Int(-1, "Router b port direction")
     bandwidth_factor = 16

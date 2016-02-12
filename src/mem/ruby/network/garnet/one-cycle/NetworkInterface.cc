@@ -49,6 +49,7 @@ NetworkInterface::NetworkInterface(const Params *p)
       m_virtual_networks(p->virt_nets), m_vc_per_vnet(p->vcs_per_vnet),
       m_num_vcs(m_vc_per_vnet * m_virtual_networks)
 {
+    m_router_id = -1;
     m_vc_round_robin = 0;
     m_ni_out_vcs.resize(m_num_vcs);
     m_ni_out_vcs_enqueue_time.resize(m_num_vcs);
@@ -94,7 +95,8 @@ NetworkInterface::addInPort(NetworkLink *in_link,
 
 void
 NetworkInterface::addOutPort(NetworkLink *out_link,
-                               CreditLink *credit_link)
+                             CreditLink *credit_link,
+                             SwitchID router_id)
 {
     inCreditLink = credit_link;
     credit_link->setLinkConsumer(this);
@@ -102,6 +104,8 @@ NetworkInterface::addOutPort(NetworkLink *out_link,
     outNetLink = out_link;
     outFlitQueue = new flitBuffer();
     out_link->setSourceQueue(outFlitQueue);
+
+    m_router_id = router_id;
 }
 
 void
@@ -211,10 +215,10 @@ bool
 NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
 {
     Message *net_msg_ptr = msg_ptr.get();
-    NetDest net_msgest = net_msg_ptr->getDestination();
+    NetDest net_msg_dest = net_msg_ptr->getDestination();
 
     // gets all the destinations associated with this message.
-    vector<NodeID> dest_nodes = net_msgest.getAllDest();
+    vector<NodeID> dest_nodes = net_msg_dest.getAllDest();
 
     // Number of flits is dependent on the link bandwidth available.
     // This is expressed in terms of bytes/cycle or the flit size
@@ -235,29 +239,37 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
 
         Message *new_net_msg_ptr = new_msg_ptr.get();
         if (dest_nodes.size() > 1) {
-            NetDest personalest;
+            NetDest personal_dest;
             for (int m = 0; m < (int) MachineType_NUM; m++) {
                 if ((destID >= MachineType_base_number((MachineType) m)) &&
                     destID < MachineType_base_number((MachineType) (m+1))) {
                     // calculating the NetDest associated with this destID
-                    personalest.clear();
-                    personalest.add((MachineID) {(MachineType) m, (destID -
+                    personal_dest.clear();
+                    personal_dest.add((MachineID) {(MachineType) m, (destID -
                         MachineType_base_number((MachineType) m))});
-                    new_net_msg_ptr->getDestination() = personalest;
+                    new_net_msg_ptr->getDestination() = personal_dest;
                     break;
                 }
             }
-            net_msgest.removeNetDest(personalest);
+            net_msg_dest.removeNetDest(personal_dest);
             // removing the destination from the original message to reflect
             // that a message with this particular destination has been
             // flitisized and an output vc is acquired
-            net_msg_ptr->getDestination().removeNetDest(personalest);
+            net_msg_ptr->getDestination().removeNetDest(personal_dest);
         }
+
+        // Embed Route into the flits
+        // NetDest format is used by the routing table
+        // Custom routing algorithms just need destID
+        RouteInfo route;
+        route.net_dest = new_net_msg_ptr->getDestination();
+        route.dest_ni = destID;
+        route.dest_router = m_net_ptr->get_router_id(destID);
 
         m_net_ptr->increment_injected_packets(vnet);
         for (int i = 0; i < num_flits; i++) {
             m_net_ptr->increment_injected_flits(vnet);
-            flit *fl = new flit(i, vc, vnet, num_flits, new_msg_ptr,
+            flit *fl = new flit(i, vc, vnet, route, num_flits, new_msg_ptr,
                 curCycle());
 
             fl->set_delay(curCycle() - ticksToCycles(msg_ptr->getTime()));

@@ -67,7 +67,7 @@ def define_options(parser):
     # ruby network options
     parser.add_option("--topology", type="string", default="Crossbar",
                       help="check configs/topologies for complete set")
-    parser.add_option("--mesh-rows", type="int", default=1,
+    parser.add_option("--mesh-rows", type="int", default=0, # TODO: change to --num-rows
                       help="the number of rows in the mesh topology")
     parser.add_option("--garnet-network", type="choice",
                       choices=['onecycle', 'fixed', 'flexible'], help="'onecycle' | 'fixed'|'flexible'")
@@ -75,6 +75,8 @@ def define_options(parser):
                       help="channel width in bits for all links inside garnet network.")
     parser.add_option("--vcs-per-vnet", action="store", type="int", default=4,
                       help="number of virtual channels per virtual network inside garnet network.")
+    parser.add_option("--routing-algorithm", action="store", type="int", default=1,
+                      help="routing algorithm in network. 0: weight-based table, 1: XY (for 2D), 2: Random (for 2D)")
     parser.add_option("--network-fault-model", action="store_true", default=False,
                       help="enable network fault model: see src/mem/ruby/network/fault_model/")
 
@@ -218,6 +220,11 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
             RouterClass)
 
     # Garnet Options
+    if options.topology == "Mesh":
+        network.num_rows = options.mesh_rows
+
+    network.routing_algorithm = options.routing_algorithm
+
     if options.channel_width_bits != None: # only valid for garnet network
         assert(options.garnet_network != None)
         network.ni_flit_size = options.channel_width_bits / 8

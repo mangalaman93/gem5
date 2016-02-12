@@ -204,14 +204,22 @@ SwitchAllocator::arbitrate_outports()
                 // remove flit from Input VC
                 flit *t_flit = m_input_unit[inport]->getTopFlit(invc);
 
-                DPRINTF(RubyNetwork, "SwitchAllocator at Router %d granted outvc %d at outport %d to invc %d at inport %d at time: %lld\n",
-                        m_router->get_id(), outvc, outport, invc, inport, m_router->curCycle());
+                DPRINTF(RubyNetwork, "SwitchAllocator at Router %d \
+                                      granted outvc %d at outport %d \
+                                      to invc %d at inport %d at time: %lld\n",
+                        m_router->get_id(), outvc,
+                        m_router->getPortDirectionName(
+                            m_output_unit[outport]->get_direction()),
+                        invc,
+                        m_router->getPortDirectionName(
+                            m_input_unit[inport]->get_direction()),
+                        m_router->curCycle());
 
 
-                // set stage, outport, and time in flit for it to correctly traverse switch
+                // set stage to ST for it to correctly traverse switch
+                // the outport was already updated in the flit
+                // in the InputUnit (after route_compute)
                 t_flit->advance_stage(ST_, m_router->curCycle());
-                t_flit->set_outport(outport);
-                t_flit->set_time(m_router->curCycle() + Cycles(1));
 
                 // set outvc (i.e., invc for next hop) in flit
                 t_flit->set_vc(outvc);

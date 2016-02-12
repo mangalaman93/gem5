@@ -55,8 +55,16 @@ class GarnetNetwork : public BaseGarnetNetwork
     ~GarnetNetwork();
     void init();
 
+    int getNumRouters();
+    int get_router_id(int ni);
+
     int getBuffersPerDataVC() { return m_buffers_per_data_vc; }
     int getBuffersPerCtrlVC() { return m_buffers_per_ctrl_vc; }
+
+    // for 2D topology
+    int get_num_rows() { return m_num_rows; }
+    int get_num_cols() { return m_num_cols; }
+
 
     void collateStats();
     void regStats();
@@ -76,7 +84,10 @@ class GarnetNetwork : public BaseGarnetNetwork
     void makeInLink(NodeID src, SwitchID dest, BasicLink* link,
                     LinkDirection direction,
                     const NetDest& routing_table_entry);
-    void makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
+    void makeInternalLink(SwitchID src, SwitchID dest,
+                          PortDirection src_outport_dirn,
+                          PortDirection dest_inport_dirn,
+                          BasicLink* link,
                           LinkDirection direction,
                           const NetDest& routing_table_entry);
 
@@ -87,6 +98,9 @@ class GarnetNetwork : public BaseGarnetNetwork
   private:
     GarnetNetwork(const GarnetNetwork& obj);
     GarnetNetwork& operator=(const GarnetNetwork& obj);
+
+    int m_num_rows;
+    int m_num_cols;
 
     std::vector<VNET_type > m_vnet_type;
     std::vector<Router *> m_routers;   // All Routers in Network

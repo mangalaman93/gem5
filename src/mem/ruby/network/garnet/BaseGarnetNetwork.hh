@@ -50,6 +50,8 @@ class BaseGarnetNetwork : public Network
     void init();
     int getNiFlitSize() const { return m_ni_flit_size; }
     int getVCsPerVnet() const { return m_vcs_per_vnet; }
+    int getRoutingAlgorithm() const { return m_routing_algorithm; }
+    int getNumRows() const { return m_num_rows; }
     bool isFaultModelEnabled() const { return m_enable_fault_model; }
     FaultModel* fault_model;
 
@@ -76,6 +78,8 @@ class BaseGarnetNetwork : public Network
   protected:
     int m_ni_flit_size;
     int m_vcs_per_vnet;
+    int m_routing_algorithm;
+    int m_num_rows;
     bool m_enable_fault_model;
 
     // Statistical variables

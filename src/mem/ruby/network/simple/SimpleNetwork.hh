@@ -59,13 +59,18 @@ class SimpleNetwork : public Network
     bool isVNetOrdered(int vnet) const { return m_ordered[vnet]; }
 
     // Methods used by Topology to setup the network
-    void makeOutLink(SwitchID src, NodeID dest, BasicLink* link,
+    void makeOutLink(SwitchID src, NodeID dest,
+                     BasicLink* link,
                      LinkDirection direction,
                      const NetDest& routing_table_entry);
-    void makeInLink(NodeID src, SwitchID dest, BasicLink* link,
+    void makeInLink(NodeID src, SwitchID dest,
+                    BasicLink* link,
                     LinkDirection direction,
                     const NetDest& routing_table_entry);
-    void makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
+    void makeInternalLink(SwitchID src, SwitchID dest,
+                          PortDirection src_outport_dirn,
+                          PortDirection dest_inport_dirn,
+                          BasicLink* link,
                           LinkDirection direction,
                           const NetDest& routing_table_entry);
 

@@ -77,10 +77,11 @@ Router::init()
 }
 
 void
-Router::addInPort(NetworkLink *in_link, CreditLink *credit_link)
+Router::addInPort(PortDirection inport_dirn,
+                  NetworkLink *in_link, CreditLink *credit_link)
 {
     int port_num = m_input_unit.size();
-    InputUnit *input_unit = new InputUnit(port_num, this);
+    InputUnit *input_unit = new InputUnit(port_num, inport_dirn, this);
 
     input_unit->set_in_link(in_link);
     input_unit->set_credit_link(credit_link);
@@ -88,15 +89,18 @@ Router::addInPort(NetworkLink *in_link, CreditLink *credit_link)
     credit_link->setSourceQueue(input_unit->getCreditQueue());
 
     m_input_unit.push_back(input_unit);
+
+    m_routing_unit->addInDirection(inport_dirn, port_num);
 }
 
 void
-Router::addOutPort(NetworkLink *out_link,
-    const NetDest& routing_table_entry, int link_weight,
-    CreditLink *credit_link)
+Router::addOutPort(PortDirection outport_dirn,
+                   NetworkLink *out_link,
+                   const NetDest& routing_table_entry, int link_weight,
+                   CreditLink *credit_link)
 {
     int port_num = m_output_unit.size();
-    OutputUnit *output_unit = new OutputUnit(port_num, this);
+    OutputUnit *output_unit = new OutputUnit(port_num, outport_dirn, this);
 
     output_unit->set_out_link(out_link);
     output_unit->set_credit_link(credit_link);
@@ -107,12 +111,25 @@ Router::addOutPort(NetworkLink *out_link,
 
     m_routing_unit->addRoute(routing_table_entry);
     m_routing_unit->addWeight(link_weight);
+    m_routing_unit->addOutDirection(outport_dirn, port_num);
+}
+
+PortDirection
+Router::getOutportDirection(int outport)
+{
+    return m_output_unit[outport]->get_direction();
+}
+
+PortDirection
+Router::getInportDirection(int inport)
+{
+    return m_input_unit[inport]->get_direction();
 }
 
 int
-Router::route_compute(flit *t_flit, int inport, int invc)
+Router::route_compute(RouteInfo route, int inport, PortDirection inport_dirn)
 {
-    return m_routing_unit->outportCompute(t_flit, inport, invc);
+    return m_routing_unit->outportCompute(route, inport, inport_dirn);
 }
 
 void
@@ -126,12 +143,27 @@ Router::grant_switch(int inport, flit *t_flit)
 {
     m_switch->update_sw_winner(inport, t_flit);
     m_switch->scheduleEventAbsolute(clockEdge(Cycles(1)));
+    t_flit->set_time(curCycle() + Cycles(1));
 }
 
 void
 Router::switch_traversal()
 {
 //    m_switch->wakeup();
+}
+
+std::string
+Router::getPortDirectionName(PortDirection direction)
+{
+    switch(direction)
+    {
+        case L_: return "Local"; break;
+        case N_: return "North"; break;
+        case E_: return "East"; break;
+        case S_: return "South"; break;
+        case W_: return "West"; break;
+        default: return "NoName"; break;
+    };
 }
 
 void

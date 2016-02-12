@@ -59,8 +59,9 @@ class Router : public BasicRouter
     ~Router();
 
     void init();
-    void addInPort(NetworkLink *link, CreditLink *credit_link);
-    void addOutPort(NetworkLink *link, const NetDest& routing_table_entry,
+    void addInPort(PortDirection inport_dirn, NetworkLink *link, CreditLink *credit_link);
+    void addOutPort(PortDirection outport_dirn, NetworkLink *link,
+                    const NetDest& routing_table_entry,
                     int link_weight, CreditLink *credit_link);
 
     int get_num_vcs()       { return m_num_vcs; }
@@ -75,15 +76,18 @@ class Router : public BasicRouter
         m_network_ptr = net_ptr;
     }
 
-    GarnetNetwork* get_net_ptr()                  { return m_network_ptr; }
+    GarnetNetwork* get_net_ptr()                    { return m_network_ptr; }
     std::vector<InputUnit *>& get_inputUnit_ref()   { return m_input_unit; }
     std::vector<OutputUnit *>& get_outputUnit_ref() { return m_output_unit; }
+    PortDirection getOutportDirection(int outport);
+    PortDirection getInportDirection(int inport);
 
-    void grant_switch(int inport, flit *t_flit);
-    int route_compute(flit *t_flit, int inport, int invc);
+    int route_compute(RouteInfo route, int inport, PortDirection direction);
     void swalloc_req();
+    void grant_switch(int inport, flit *t_flit);
     void switch_traversal();
 
+    std::string getPortDirectionName(PortDirection direction);
     void printFaultVector(std::ostream& out);
     void printAggregateFaultProbability(std::ostream& out);
 

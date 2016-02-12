@@ -100,6 +100,8 @@ class Mesh(SimpleTopology):
                     int_links.append(IntLink(link_id=link_count,
                                             node_a=routers[east_id],
                                             node_b=routers[west_id],
+                                            node_a_port=3, # east port
+                                            node_b_port=1, # west port
                                             weight=1))
                     link_count += 1
 
@@ -111,6 +113,8 @@ class Mesh(SimpleTopology):
                     int_links.append(IntLink(link_id=link_count,
                                             node_a=routers[north_id],
                                             node_b=routers[south_id],
+                                            node_a_port=4, # north port
+                                            node_b_port=2, # south port
                                             weight=2))
                     link_count += 1
 

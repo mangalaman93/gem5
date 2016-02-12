@@ -78,7 +78,7 @@ class NetDest
     bool isBroadcast() const;
     bool isEmpty() const;
 
-    // For Princeton Network
+    // For Garnet Network
     std::vector<NodeID> getAllDest();
 
     MachineID smallestElement() const;

@@ -31,10 +31,24 @@
 #ifndef __MEM_RUBY_NETWORK_GARNET_NETWORKHEADER_HH__
 #define __MEM_RUBY_NETWORK_GARNET_NETWORKHEADER_HH__
 
+#include "mem/ruby/common/NetDest.hh"
+
 enum flit_type {HEAD_, BODY_, TAIL_, HEAD_TAIL_, NUM_FLIT_TYPE_};
 enum VC_state_type {IDLE_, VC_AB_, ACTIVE_, NUM_VC_STATE_TYPE_};
 enum VNET_type {CTRL_VNET_, DATA_VNET_, NULL_VNET_, NUM_VNET_TYPE_};
 enum flit_stage {I_, VA_, SA_, ST_, LT_, NUM_FLIT_STAGE_};
+enum port_direction_type {L_ = 0, W_ = 1, S_ = 2, E_ = 3, N_ = 4, UNKNOWN_ = 5, NUM_PORT_DIRECTION_TYPE_};
+enum RoutingAlgorithm { TABLE_ = 0, XY_ = 1, RANDOM_ = 2, CUSTOM_ = 3, NUM_ROUTING_ALGORITHM_};
+
+struct RouteInfo
+{
+    // destination format for table-based routing
+    NetDest net_dest;
+
+    // destination format for topology-specific routing
+    int dest_ni;
+    int dest_router;
+};
 
 #define INFINITE_ 10000
 

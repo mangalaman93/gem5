@@ -176,7 +176,10 @@ GarnetNetwork_d::makeOutLink(SwitchID src, NodeID dest, BasicLink* link,
 */
 
 void
-GarnetNetwork_d::makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
+GarnetNetwork_d::makeInternalLink(SwitchID src, SwitchID dest,
+                                  PortDirection src_outport_dirn,
+                                  PortDirection dest_inport_dirn,
+                                  BasicLink* link,
                                   LinkDirection direction,
                                   const NetDest& routing_table_entry)
 {

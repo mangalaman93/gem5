@@ -57,7 +57,7 @@ class NetworkInterface : public ClockedObject, public Consumer
     void init();
 
     void addInPort(NetworkLink *in_link, CreditLink *credit_link);
-    void addOutPort(NetworkLink *out_link, CreditLink *credit_link);
+    void addOutPort(NetworkLink *out_link, CreditLink *credit_link, SwitchID router_id);
 
     void wakeup();
     void addNode(std::vector<MessageBuffer *> &inNode,
@@ -65,6 +65,7 @@ class NetworkInterface : public ClockedObject, public Consumer
 
     void print(std::ostream& out) const;
     int get_vnet(int vc);
+    int get_router_id() { return m_router_id; }
     void init_net_ptr(GarnetNetwork *net_ptr) { m_net_ptr = net_ptr; }
 
     uint32_t functionalWrite(Packet *);
@@ -73,6 +74,7 @@ class NetworkInterface : public ClockedObject, public Consumer
     GarnetNetwork *m_net_ptr;
     const NodeID m_id;
     const int m_virtual_networks, m_vc_per_vnet, m_num_vcs;
+    int m_router_id; // id of my router
     std::vector<OutVcState *> m_out_vc_state;
     std::vector<int> m_vc_allocator;
     int m_vc_round_robin; // For round robin scheduling

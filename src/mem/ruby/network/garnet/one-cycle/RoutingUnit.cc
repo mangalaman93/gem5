@@ -55,12 +55,8 @@ RoutingUnit::addWeight(int link_weight)
 }
 
 int
-RoutingUnit::lookupRoutingTable(flit *t_flit)
+RoutingUnit::lookupRoutingTable(NetDest msg_destination)
 {
-    MsgPtr msg_ptr = t_flit->get_msg_ptr();
-    Message *net_msg_ptr = msg_ptr.get();
-    NetDest msg_destination = net_msg_ptr->getDestination();
-
     int output_link = -1;
     int min_weight = INFINITE_;
 
@@ -82,16 +78,167 @@ RoutingUnit::lookupRoutingTable(flit *t_flit)
 }
 
 
-int
-RoutingUnit::outportCompute(flit *t_flit, int inport, int invc)
+void
+RoutingUnit::addInDirection(PortDirection inport_dirn, int inport_idx)
 {
-    int outport = lookupRoutingTable(t_flit);
-    return outport;
-
-    // TODO: delete
-//    in_unit->updateRoute(invc, outport, m_router->curCycle());
-//    t_flit->advance_stage(VA_, m_router->curCycle() + Cycles(1));
-//    m_router->vcarb_req();
+    m_inports_dirn2idx[inport_dirn] = inport_idx;
+    m_inports_idx2dirn[inport_idx]  = inport_dirn;
 }
 
+void
+RoutingUnit::addOutDirection(PortDirection outport_dirn, int outport_idx)
+{
+    m_outports_dirn2idx[outport_dirn] = outport_idx;
+    m_outports_idx2dirn[outport_idx]  = outport_dirn;
+}
 
+int
+RoutingUnit::outportCompute(RouteInfo route, int inport, PortDirection inport_dirn)
+{
+    int outport = -1;
+
+    if (route.dest_router == m_router->get_id())
+    {
+        // Multiple NIs may be connected to this router, all with dirn = L_
+        // Get exact outport id from table
+        outport = lookupRoutingTable(route.net_dest);
+        return outport;
+    }
+
+    RoutingAlgorithm routing_algorithm = (RoutingAlgorithm) m_router->get_net_ptr()->getRoutingAlgorithm();
+
+    switch(routing_algorithm)
+    {
+        case TABLE_:  outport = lookupRoutingTable(route.net_dest); break;
+        case XY_:     outport = outportComputeXY(route, inport, inport_dirn); break;
+        case RANDOM_: outport = outportComputeRandom(route, inport, inport_dirn); break;
+        // any custom algorithm
+        //case CUSTOM_: outportComputeCustom(); break;
+        default: outport = lookupRoutingTable(route.net_dest); break;
+    }
+
+    assert(outport != -1);
+    return outport;
+}
+
+int
+RoutingUnit::outportComputeXY(RouteInfo route,
+                              int inport,
+                              PortDirection inport_dirn)
+{
+    int num_rows = m_router->get_net_ptr()->get_num_rows();
+    int num_cols = m_router->get_net_ptr()->get_num_cols();
+    assert(num_rows > 0 && num_cols > 0);
+
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+    int my_y = my_id / num_cols;
+
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+    int dest_y = dest_id / num_cols;
+
+    int x_hops = abs(dest_x - my_x);
+    int y_hops = abs(dest_y - my_y);
+
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
+
+    PortDirection outport_dirn = UNKNOWN_;
+
+    if (x_hops > 0)
+    {
+        if (x_dirn)
+        {
+            assert(inport_dirn == L_ || inport_dirn == W_);
+            outport_dirn = E_;
+        }
+        else
+        {
+            assert(inport_dirn == L_ || inport_dirn == E_);
+            outport_dirn = W_;
+        }
+    }
+    else if (y_hops > 0)
+    {
+        if (y_dirn)
+        {
+            assert(inport_dirn != N_); // L_ or S_ or W_ or E_
+            outport_dirn = N_;
+        }
+        else
+        {
+            assert(inport_dirn != S_); // L_ or N_ or W_ or E_
+            outport_dirn = S_;
+        }
+    }
+    else
+    {
+        // x_hops == 0 and y_hops == 0
+        // this is not possible
+        // already checked that in outportCompute() function
+        assert(0);
+    }
+
+    return m_outports_dirn2idx[outport_dirn];
+}
+
+int
+RoutingUnit::outportComputeRandom(RouteInfo route,
+                                  int inport,
+                                  PortDirection inport_dirn)
+{
+    int num_rows = m_router->get_net_ptr()->get_num_rows();
+    int num_cols = m_router->get_net_ptr()->get_num_cols();
+    assert(num_rows > 0 && num_cols > 0);
+
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+    int my_y = my_id / num_cols;
+
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+    int dest_y = dest_id / num_cols;
+
+    int x_hops = abs(dest_x - my_x);
+    int y_hops = abs(dest_y - my_y);
+
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
+
+    PortDirection outport_dirn = UNKNOWN_;
+
+    // already checked that in outportCompute() function
+    assert(!(x_hops == 0 && y_hops == 0));
+
+    if (x_hops == 0)
+    {
+        if (y_dirn > 0)
+            outport_dirn = N_;
+        else
+            outport_dirn = S_;
+    }
+    else if (y_hops == 0)
+    {
+        if (x_dirn > 0)
+            outport_dirn = E_;
+        else
+            outport_dirn = W_;
+    }
+    else
+    {
+        int rand = random() % 2;
+
+        if (x_dirn && y_dirn) // Quadrant I
+            outport_dirn = rand ? E_ : N_;
+        else if (!x_dirn && y_dirn) // Quadrant II
+            outport_dirn = rand ? W_ : N_;
+        else if (!x_dirn && !y_dirn) // Quadrant III
+            outport_dirn = rand ? W_ : S_;
+        else // Quadrant IV
+            outport_dirn = rand ? E_ : S_;
+
+    }
+
+    return m_outports_dirn2idx[outport_dirn];
+}

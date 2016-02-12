@@ -72,9 +72,9 @@ Topology::Topology(uint32_t num_routers,
 
         // create the internal uni-directional links in both directions
         //   the first direction is marked: In
-        addLink(ext_idx1, int_idx, ext_link, LinkDirection_In);
+        addLink(ext_idx1, int_idx, 0, 0, ext_link, LinkDirection_In);
         //   the first direction is marked: Out
-        addLink(int_idx, ext_idx2, ext_link, LinkDirection_Out);
+        addLink(int_idx, ext_idx2, 0, 0, ext_link, LinkDirection_Out);
     }
 
     for (vector<BasicIntLink*>::const_iterator i = int_links.begin();
@@ -82,6 +82,9 @@ Topology::Topology(uint32_t num_routers,
         BasicIntLink *int_link = (*i);
         BasicRouter *router_a = int_link->params()->node_a;
         BasicRouter *router_b = int_link->params()->node_b;
+
+        PortDirection a_port_dirn = int_link->params()->node_a_port;
+        PortDirection b_port_dirn = int_link->params()->node_b_port;
 
         // Store the IntLink pointers for later
         m_int_link_vector.push_back(int_link);
@@ -91,9 +94,9 @@ Topology::Topology(uint32_t num_routers,
 
         // create the internal uni-directional links in both directions
         //   the first direction is marked: In
-        addLink(a, b, int_link, LinkDirection_In);
+        addLink(a, b, a_port_dirn, b_port_dirn, int_link, LinkDirection_In);
         //   the second direction is marked: Out
-        addLink(b, a, int_link, LinkDirection_Out);
+        addLink(b, a, b_port_dirn, a_port_dirn, int_link, LinkDirection_Out);
     }
 }
 
@@ -151,7 +154,10 @@ Topology::createLinks(Network *net)
 }
 
 void
-Topology::addLink(SwitchID src, SwitchID dest, BasicLink* link, 
+Topology::addLink(SwitchID src, SwitchID dest,
+                  PortDirection src_outport_dirn,
+                  PortDirection dest_inport_dirn,
+                  BasicLink* link,
                   LinkDirection dir)
 {
     assert(src <= m_number_of_switches+m_nodes+m_nodes);
@@ -164,6 +170,8 @@ Topology::addLink(SwitchID src, SwitchID dest, BasicLink* link,
     src_dest_pair.second = dest;
     link_entry.direction = dir;
     link_entry.link = link;
+    link_entry.src_outport_dirn = src_outport_dirn;
+    link_entry.dest_inport_dirn = dest_inport_dirn;
     m_link_map[src_dest_pair] = link_entry;
 }
 
@@ -198,6 +206,7 @@ Topology::makeLink(Network *net, SwitchID src, SwitchID dest,
         src_dest.second = dest;
         link_entry = m_link_map[src_dest];
         net->makeInternalLink(src - (2 * m_nodes), dest - (2 * m_nodes),
+                              link_entry.src_outport_dirn, link_entry.dest_inport_dirn,
                               link_entry.link, link_entry.direction,
                               routing_table_entry);
     }
