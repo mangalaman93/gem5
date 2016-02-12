@@ -67,10 +67,10 @@ def define_options(parser):
     # ruby network options
     parser.add_option("--topology", type="string", default="Crossbar",
                       help="check configs/topologies for complete set")
-    parser.add_option("--mesh-rows", type="int", default=0, # TODO: change to --num-rows
-                      help="the number of rows in the mesh topology")
-    parser.add_option("--garnet-network", type="choice",
-                      choices=['onecycle', 'fixed', 'flexible'], help="'onecycle' | 'fixed'|'flexible'")
+    parser.add_option("--num-rows", type="int", default=0,
+                      help="the number of rows in 2D (mesh/torus) topology")
+    parser.add_option("--network", type="choice", default="simple",
+                      choices=['simple', 'garnet-fixed-pipeline', 'garnet2.0'], help="'simple' | 'garnet1.0'|'garnet2.0'")
     parser.add_option("--channel-width-bits", action="store", type="int", default=128,
                       help="channel width in bits for all links inside garnet network.")
     parser.add_option("--vcs-per-vnet", action="store", type="int", default=4,
@@ -159,26 +159,26 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
     ruby = system.ruby
 
     # Set the network classes based on the command line options
-    if options.garnet_network == "onecycle":
+    if options.network == "garnet2.0":
         NetworkClass = GarnetNetwork
         IntLinkClass = GarnetIntLink
         ExtLinkClass = GarnetExtLink
         RouterClass = GarnetRouter
         InterfaceClass = GarnetNetworkInterface
 
-    elif options.garnet_network == "fixed":
+    elif options.network == "garnet-fixed-pipeline":
         NetworkClass = GarnetNetwork_d
         IntLinkClass = GarnetIntLink_d
         ExtLinkClass = GarnetExtLink_d
         RouterClass = GarnetRouter_d
         InterfaceClass = GarnetNetworkInterface_d
 
-    elif options.garnet_network == "flexible":
-        NetworkClass = GarnetNetwork
-        IntLinkClass = GarnetIntLink
-        ExtLinkClass = GarnetExtLink
-        RouterClass = GarnetRouter
-        InterfaceClass = GarnetNetworkInterface
+#    elif options.garnet_network == "flexible":
+#        NetworkClass = GarnetNetwork
+#        IntLinkClass = GarnetIntLink
+#        ExtLinkClass = GarnetExtLink
+#        RouterClass = GarnetRouter
+#        InterfaceClass = GarnetNetworkInterface
 
     else:
         NetworkClass = SimpleNetwork
@@ -220,20 +220,13 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
             RouterClass)
 
     # Garnet Options
-    if options.topology == "Mesh":
-        network.num_rows = options.mesh_rows
-
-    network.routing_algorithm = options.routing_algorithm
-
-    if options.channel_width_bits != None: # only valid for garnet network
-        assert(options.garnet_network != None)
-        network.ni_flit_size = options.channel_width_bits / 8
-
-    if options.vcs_per_vnet != None: # only valid for garnet network
-        assert(options.garnet_network != None)
+    if options.network == "garnet2.0":
+        network.num_rows = options.num_rows
         network.vcs_per_vnet = options.vcs_per_vnet
+        network.ni_flit_size = options.channel_width_bits / 8
+        network.routing_algorithm = options.routing_algorithm
 
-    if options.garnet_network is None:
+    if options.network == "simple":
         assert(NetworkClass == SimpleNetwork)
         assert(RouterClass == Switch)
         network.setup_buffers()
@@ -243,7 +236,7 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
         network.netifs = netifs
 
     if options.network_fault_model:
-        assert(options.garnet_network == "fixed")
+        assert(options.network == "garnet-fixed-pipeline")
         network.enable_fault_model = True
         network.fault_model = FaultModel()
 

@@ -1,0 +1,12 @@
+- what are functional writes??
+
+- Credit type inheriting from flit
+- Make router 1-cycle
+
+rename FIXEDPIPELINE to GARNET2P0
+
+Add 
+--network in configuration
+--network=simple
+or
+--network=garnet
