@@ -46,7 +46,7 @@ class MeshDirCorners(SimpleTopology):
         nodes = self.nodes
 
         num_routers = options.num_cpus
-        num_rows = options.mesh_rows
+        num_rows = options.num_rows
 
         # First determine which nodes are cache cntrls vs. dirs vs. dma
         cache_nodes = []

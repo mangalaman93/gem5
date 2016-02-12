@@ -45,7 +45,7 @@ class Torus(SimpleTopology):
         nodes = self.nodes
 
         num_routers = options.num_cpus
-        num_rows = options.mesh_rows
+        num_rows = options.num_rows
 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
