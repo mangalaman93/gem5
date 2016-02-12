@@ -142,14 +142,16 @@ void
 Router::grant_switch(int inport, flit *t_flit)
 {
     m_switch->update_sw_winner(inport, t_flit);
-    m_switch->scheduleEventAbsolute(clockEdge(Cycles(1)));
-    t_flit->set_time(curCycle() + Cycles(1));
+
+    // One-cycle SA/VA + ST
+//    m_switch->scheduleEventAbsolute(clockEdge(Cycles(1)));
+//    t_flit->set_time(curCycle() + Cycles(1));
 }
 
 void
 Router::switch_traversal()
 {
-//    m_switch->wakeup();
+    m_switch->wakeup();
 }
 
 std::string
