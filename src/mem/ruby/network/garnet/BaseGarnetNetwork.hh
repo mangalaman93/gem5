@@ -53,34 +53,19 @@ class BaseGarnetNetwork : public Network
     bool isFaultModelEnabled() const { return m_enable_fault_model; }
     FaultModel* fault_model;
 
-    void increment_injected_packets(int vnet) { m_packets_injected[vnet]++; }
-    void increment_received_packets(int vnet) { m_packets_received[vnet]++; }
-
-    void
-    increment_packet_network_latency(Cycles latency, int vnet)
-    {
-        m_packet_network_latency[vnet] += latency;
-    }
-
-    void
-    increment_packet_queueing_latency(Cycles latency, int vnet)
-    {
-        m_packet_queueing_latency[vnet] += latency;
-    }
-
     void increment_injected_flits(int vnet) { m_flits_injected[vnet]++; }
     void increment_received_flits(int vnet) { m_flits_received[vnet]++; }
 
     void
-    increment_flit_network_latency(Cycles latency, int vnet)
+    increment_network_latency(Cycles latency, int vnet)
     {
-        m_flit_network_latency[vnet] += latency;
+        m_network_latency[vnet] += latency;
     }
 
     void
-    increment_flit_queueing_latency(Cycles latency, int vnet)
+    increment_queueing_latency(Cycles latency, int vnet)
     {
-        m_flit_queueing_latency[vnet] += latency;
+        m_queueing_latency[vnet] += latency;
     }
 
     bool isVNetOrdered(int vnet) const { return m_ordered[vnet]; }
@@ -94,28 +79,16 @@ class BaseGarnetNetwork : public Network
     bool m_enable_fault_model;
 
     // Statistical variables
-    Stats::Vector m_packets_received;
-    Stats::Vector m_packets_injected;
-    Stats::Vector m_packet_network_latency;
-    Stats::Vector m_packet_queueing_latency;
-
-    Stats::Formula m_avg_packet_vnet_latency;
-    Stats::Formula m_avg_packet_vqueue_latency;
-    Stats::Formula m_avg_packet_network_latency;
-    Stats::Formula m_avg_packet_queueing_latency;
-    Stats::Formula m_avg_packet_latency;
-
-
     Stats::Vector m_flits_received;
     Stats::Vector m_flits_injected;
-    Stats::Vector m_flit_network_latency;
-    Stats::Vector m_flit_queueing_latency;
+    Stats::Vector m_network_latency;
+    Stats::Vector m_queueing_latency;
 
-    Stats::Formula m_avg_flit_vnet_latency;
-    Stats::Formula m_avg_flit_vqueue_latency;
-    Stats::Formula m_avg_flit_network_latency;
-    Stats::Formula m_avg_flit_queueing_latency;
-    Stats::Formula m_avg_flit_latency;
+    Stats::Formula m_avg_vnet_latency;
+    Stats::Formula m_avg_vqueue_latency;
+    Stats::Formula m_avg_network_latency;
+    Stats::Formula m_avg_queueing_latency;
+    Stats::Formula m_avg_latency;
 };
 
 #endif // __MEM_RUBY_NETWORK_GARNET_BASEGARNETNETWORK_HH__
