@@ -95,7 +95,8 @@ SimpleNetwork::makeOutLink(SwitchID src, NodeID dest, BasicLink* link,
 
 // From an endpoint node to a switch
 void
-SimpleNetwork::makeInLink(NodeID src, SwitchID dest, BasicLink* link,
+SimpleNetwork::makeInLink(NodeID src, SwitchID dest,
+                          BasicLink* link,
                           LinkDirection direction,
                           const NetDest& routing_table_entry)
 {
@@ -105,7 +106,10 @@ SimpleNetwork::makeInLink(NodeID src, SwitchID dest, BasicLink* link,
 
 // From a switch to a switch
 void
-SimpleNetwork::makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
+SimpleNetwork::makeInternalLink(SwitchID src, SwitchID dest,
+                                PortDirection src_outport_dirn,
+                                PortDirection dest_inport_dirn,
+                                BasicLink* link,
                                 LinkDirection direction,
                                 const NetDest& routing_table_entry)
 {

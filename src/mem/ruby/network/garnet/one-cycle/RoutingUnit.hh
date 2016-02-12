@@ -35,6 +35,7 @@
 #include "mem/ruby/common/NetDest.hh"
 #include "mem/ruby/network/garnet/NetworkHeader.hh"
 #include "mem/ruby/network/garnet/one-cycle/flit.hh"
+#include "mem/ruby/network/garnet/one-cycle/GarnetNetwork.hh"
 
 class InputUnit;
 class Router;
@@ -43,21 +44,41 @@ class RoutingUnit
 {
   public:
     RoutingUnit(Router *router);
+    int outportCompute(RouteInfo route,
+                      int inport,
+                      PortDirection inport_dirn);
 
-    // Routing Table (default)
+    // Topology-agnostic Routing Table based routing (default)
     void addRoute(const NetDest& routing_table_entry);
     void addWeight(int link_weight);
-    int  lookupRoutingTable(flit *t_flit); // get output port from routing table
+    int  lookupRoutingTable(NetDest net_dest); // get output port from routing table
 
-    int outportCompute(flit *t_flit, int inport, int invc);
+    // Topology-specific direction based routing
+    void addInDirection(PortDirection inport_dirn, int inport);
+    void addOutDirection(PortDirection outport_dirn, int outport);
 
-    // Mesh Specific
-    int outportComputeXY(flit *t_flit, int inport, int invc);
+    // Routing for Mesh
+    int outportComputeXY(RouteInfo route,
+                         int inport,
+                         PortDirection inport_dirn);
+
+    int outportComputeRandom(RouteInfo route,
+                             int inport,
+                             PortDirection inport_dirn);
+
 
   private:
     Router *m_router;
+
+    // Routing Table
     std::vector<NetDest> m_routing_table;
     std::vector<int> m_weight_table;
+
+    // Inport and Outport direction to idx maps
+    std::map<PortDirection, int> m_inports_dirn2idx;
+    std::map<int, PortDirection> m_inports_idx2dirn;
+    std::map<int, PortDirection> m_outports_idx2dirn;
+    std::map<PortDirection, int> m_outports_dirn2idx;
 };
 
 #endif // __MEM_RUBY_NETWORK_GARNET_FIXED_PIPELINE_ROUTING_UNIT_D_HH__

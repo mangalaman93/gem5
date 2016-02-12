@@ -94,6 +94,20 @@ GarnetNetwork::init()
     assert(m_topology_ptr != NULL);
     m_topology_ptr->createLinks(this);
 
+    // Initialize topology specific parameters
+    if (getNumRows() > 0)
+    {
+        // 2D topology (mesh/torus) ...
+        m_num_rows = getNumRows();
+        m_num_cols = m_routers.size() / m_num_rows;
+        assert(m_num_rows * m_num_cols == m_routers.size());
+    }
+    else
+    {
+        m_num_rows = -1;
+        m_num_cols = -1;
+    }
+
     // FaultModel: declare each router to the fault model
     if(isFaultModelEnabled()){
         for (vector<Router*>::const_iterator i= m_routers.begin();
@@ -141,8 +155,9 @@ GarnetNetwork::makeInLink(NodeID src, SwitchID dest, BasicLink* link,
     m_networklinks.push_back(net_link);
     m_creditlinks.push_back(credit_link);
 
-    m_routers[dest]->addInPort(net_link, credit_link);
-    m_nis[src]->addOutPort(net_link, credit_link);
+    PortDirection dest_inport_dirn = L_;
+    m_routers[dest]->addInPort(dest_inport_dirn, net_link, credit_link);
+    m_nis[src]->addOutPort(net_link, credit_link, dest);
 }
 
 /*
@@ -167,8 +182,10 @@ GarnetNetwork::makeOutLink(SwitchID src, NodeID dest, BasicLink* link,
     m_networklinks.push_back(net_link);
     m_creditlinks.push_back(credit_link);
 
-    m_routers[src]->addOutPort(net_link, routing_table_entry,
-                                         link->m_weight, credit_link);
+    PortDirection src_outport_dirn = L_;
+    m_routers[src]->addOutPort(src_outport_dirn, net_link,
+                               routing_table_entry,
+                               link->m_weight, credit_link);
     m_nis[dest]->addInPort(net_link, credit_link);
 }
 
@@ -177,9 +194,12 @@ GarnetNetwork::makeOutLink(SwitchID src, NodeID dest, BasicLink* link,
 */
 
 void
-GarnetNetwork::makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
-                                  LinkDirection direction,
-                                  const NetDest& routing_table_entry)
+GarnetNetwork::makeInternalLink(SwitchID src, SwitchID dest,
+                                PortDirection src_outport_dirn,
+                                PortDirection dest_inport_dirn,
+                                BasicLink* link,
+                                LinkDirection direction,
+                                const NetDest& routing_table_entry)
 {
     GarnetIntLink* garnet_link = safe_cast<GarnetIntLink*>(link);
     NetworkLink* net_link = garnet_link->m_network_links[direction];
@@ -188,9 +208,22 @@ GarnetNetwork::makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
     m_networklinks.push_back(net_link);
     m_creditlinks.push_back(credit_link);
 
-    m_routers[dest]->addInPort(net_link, credit_link);
-    m_routers[src]->addOutPort(net_link, routing_table_entry,
-                                         link->m_weight, credit_link);
+    m_routers[dest]->addInPort(dest_inport_dirn, net_link, credit_link);
+    m_routers[src]->addOutPort(src_outport_dirn, net_link,
+                               routing_table_entry,
+                               link->m_weight, credit_link);
+}
+
+int
+GarnetNetwork::getNumRouters()
+{
+    return m_routers.size();
+}
+
+int
+GarnetNetwork::get_router_id(int ni)
+{
+    return m_nis[ni]->get_router_id();
 }
 
 void

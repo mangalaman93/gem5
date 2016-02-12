@@ -30,7 +30,7 @@
 
 #include "mem/ruby/network/garnet/one-cycle/flit.hh"
 
-flit::flit(int id, int  vc, int vnet, int size, MsgPtr msg_ptr,
+flit::flit(int id, int  vc, int vnet, RouteInfo route, int size, MsgPtr msg_ptr,
     Cycles curTime)
 {
     m_size = size;
@@ -40,6 +40,7 @@ flit::flit(int id, int  vc, int vnet, int size, MsgPtr msg_ptr,
     m_id = id;
     m_vnet = vnet;
     m_vc = vc;
+    m_route = route;
     m_stage.first = I_;
     m_stage.second = m_time;
 
@@ -71,6 +72,8 @@ flit::print(std::ostream& out) const
     out << "Type=" << m_type << " ";
     out << "Vnet=" << m_vnet << " ";
     out << "VC=" << m_vc << " ";
+    out << "Dest NI=" << m_route.dest_ni << " ";
+    out << "Dest Router=" << m_route.dest_router << " ";
     out << "Enqueue Time=" << m_enqueue_time << " ";
     out << "]";
 }

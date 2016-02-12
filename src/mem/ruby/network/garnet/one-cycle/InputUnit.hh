@@ -45,11 +45,13 @@
 class InputUnit : public Consumer
 {
   public:
-    InputUnit(int id, Router *router);
+    InputUnit(int id, PortDirection direction, Router *router);
     ~InputUnit();
 
     void wakeup();
     void print(std::ostream& out) const {};
+
+    inline PortDirection get_direction() { return m_direction; }
 
     inline void
     set_vc_idle(int vc, Cycles curTime)
@@ -151,6 +153,7 @@ class InputUnit : public Consumer
 
   private:
     int m_id;
+    PortDirection m_direction;
     int m_num_vcs;
     int m_vc_per_vnet;
 

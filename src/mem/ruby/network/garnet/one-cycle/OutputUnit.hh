@@ -45,7 +45,7 @@
 class OutputUnit : public Consumer
 {
   public:
-    OutputUnit(int id, Router *router);
+    OutputUnit(int id, PortDirection direction, Router *router);
     ~OutputUnit();
     void set_out_link(NetworkLink *link);
     void set_credit_link(CreditLink *credit_link);
@@ -57,6 +57,8 @@ class OutputUnit : public Consumer
     bool has_credit(int out_vc);
     bool has_free_vc(int vnet);
     int select_free_vc(int vnet);
+
+    inline PortDirection get_direction() { return m_direction; }
 
     int
     get_credit_count(int vc)
@@ -93,6 +95,7 @@ class OutputUnit : public Consumer
 
   private:
     int m_id;
+    PortDirection m_direction;
     int m_num_vcs;
     int m_vc_per_vnet;
     Router *m_router;

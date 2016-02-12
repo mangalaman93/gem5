@@ -4,3 +4,8 @@ Route in every flit.
 Direction.
 
 rename FIXEDPIPELINE to ONECYCLE
+Add 
+--network in configuration
+--network=simple
+or
+--network=garnet

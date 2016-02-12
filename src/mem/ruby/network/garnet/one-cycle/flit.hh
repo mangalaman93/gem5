@@ -41,7 +41,7 @@
 class flit
 {
   public:
-    flit(int id, int vc, int vnet, int size, MsgPtr msg_ptr, Cycles curTime);
+    flit(int id, int vc, int vnet, RouteInfo route, int size, MsgPtr msg_ptr, Cycles curTime);
     flit(int vc, bool is_free_signal, Cycles curTime);
     void set_outport(int port) { m_outport = port; }
     int get_outport() {return m_outport; }
@@ -55,6 +55,8 @@ class flit
     int get_vnet() { return m_vnet; }
     int get_vc() { return m_vc; }
     void set_vc(int vc) { m_vc = vc; }
+    RouteInfo get_route() { return m_route; }
+    void set_route(RouteInfo route) { m_route = route; }
     MsgPtr& get_msg_ptr() { return m_msg_ptr; }
     flit_type get_type() { return m_type; }
 
@@ -94,6 +96,7 @@ class flit
     int m_id;
     int m_vnet;
     int m_vc;
+    RouteInfo m_route;
     int m_size;
     bool m_is_free_signal;
     Cycles m_enqueue_time, m_time;

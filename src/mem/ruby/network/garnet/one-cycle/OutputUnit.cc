@@ -37,10 +37,11 @@
 using namespace std;
 using m5::stl_helpers::deletePointers;
 
-OutputUnit::OutputUnit(int id, Router *router)
+OutputUnit::OutputUnit(int id, PortDirection direction, Router *router)
     : Consumer(router)
 {
     m_id = id;
+    m_direction = direction;
     m_router = router;
     m_num_vcs = m_router->get_num_vcs();
     m_vc_per_vnet = m_router->get_vc_per_vnet();

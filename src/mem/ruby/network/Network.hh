@@ -86,7 +86,10 @@ class Network : public ClockedObject
     virtual void makeInLink(NodeID src, SwitchID dest, BasicLink* link,
                             LinkDirection direction,
                             const NetDest& routing_table_entry) = 0;
-    virtual void makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
+    virtual void makeInternalLink(SwitchID src, SwitchID dest,
+                                  PortDirection src_outport_dirn,
+                                  PortDirection dest_inport_dirn,
+                                  BasicLink* link,
                                   LinkDirection direction,
                                   const NetDest& routing_table_entry) = 0;
 

@@ -37,9 +37,11 @@
 using namespace std;
 using m5::stl_helpers::deletePointers;
 
-InputUnit::InputUnit(int id, Router *router) : Consumer(router)
+InputUnit::InputUnit(int id, PortDirection direction, Router *router)
+            : Consumer(router)
 {
     m_id = id;
+    m_direction = direction;
     m_router = router;
     m_num_vcs = m_router->get_num_vcs();
     m_vc_per_vnet = m_router->get_vc_per_vnet();
@@ -72,7 +74,7 @@ InputUnit::wakeup()
     if (m_in_link->isReady(m_router->curCycle())) {
 
     DPRINTF(RubyNetwork, "Router %d InputUnit %d woke up at time: %lld\n",
-            m_router->get_id(), m_id, m_router->curCycle());
+            m_router->get_id(), m_router->getPortDirectionName(m_direction), m_router->curCycle());
 
 
         t_flit = m_in_link->consumeLink();
@@ -85,12 +87,19 @@ InputUnit::wakeup()
             set_vc_active(vc, m_router->curCycle());
 
             // Route computation for this vc
-            int outport = m_router->route_compute(t_flit, m_id, vc);
+            int outport = m_router->route_compute(t_flit->get_route(), m_id, m_direction);
+
+            // Update output port in VC
+            // All flits in this packet will use this output port
+            // For simplicity, also updating the outport field in the flit
             grant_outport(vc, outport);
+            t_flit->set_outport(m_vcs[vc]->get_outport());
 
         } else {
             assert(m_vcs[vc]->get_state() == ACTIVE_);
+            t_flit->set_outport(m_vcs[vc]->get_outport());
         }
+
 
         // Buffer the flit
         m_vcs[vc]->insertFlit(t_flit);
