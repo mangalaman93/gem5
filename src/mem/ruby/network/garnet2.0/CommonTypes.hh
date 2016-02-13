@@ -48,6 +48,7 @@ struct RouteInfo
     // destination format for topology-specific routing
     int dest_ni;
     int dest_router;
+    int hops;
 };
 
 #define INFINITE_ 10000

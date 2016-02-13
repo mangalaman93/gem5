@@ -341,6 +341,10 @@ GarnetNetwork::regStats()
     m_avg_flit_latency = m_avg_flit_network_latency + m_avg_flit_queueing_latency;
 
 
+    // Hops
+    m_avg_hops.name(name() + ".average_hops");
+    m_avg_hops = m_total_hops / sum(m_flits_received);
+
     // Links
     m_average_link_utilization.name(name() + ".avg_link_utilization");
 

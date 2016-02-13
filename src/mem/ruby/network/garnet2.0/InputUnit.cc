@@ -79,6 +79,7 @@ InputUnit::wakeup()
 
         t_flit = m_in_link->consumeLink();
         int vc = t_flit->get_vc();
+        t_flit->increment_hops(); // for stats
 
         if ((t_flit->get_type() == HEAD_) ||
             (t_flit->get_type() == HEAD_TAIL_)) {
