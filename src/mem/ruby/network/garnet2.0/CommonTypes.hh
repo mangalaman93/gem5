@@ -38,7 +38,7 @@ enum VC_state_type {IDLE_, VC_AB_, ACTIVE_, NUM_VC_STATE_TYPE_};
 enum VNET_type {CTRL_VNET_, DATA_VNET_, NULL_VNET_, NUM_VNET_TYPE_};
 enum flit_stage {I_, VA_, SA_, ST_, LT_, NUM_FLIT_STAGE_};
 enum port_direction_type {L_ = 0, W_ = 1, S_ = 2, E_ = 3, N_ = 4, UNKNOWN_ = 5, NUM_PORT_DIRECTION_TYPE_};
-enum RoutingAlgorithm { TABLE_ = 0, XY_ = 1, RANDOM_ = 2, CUSTOM_ = 3, NUM_ROUTING_ALGORITHM_};
+enum RoutingAlgorithm { TABLE_ = 0, XY_ = 1, RANDOM_ = 2, TURN_MODEL_ = 3, NUM_ROUTING_ALGORITHM_};
 
 struct RouteInfo
 {

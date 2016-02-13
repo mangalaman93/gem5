@@ -112,6 +112,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport, PortDirection inport_di
         case TABLE_:  outport = lookupRoutingTable(route.net_dest); break;
         case XY_:     outport = outportComputeXY(route, inport, inport_dirn); break;
         case RANDOM_: outport = outportComputeRandom(route, inport, inport_dirn); break;
+        case TURN_MODEL_: outport = outportComputeTurnModel(route, inport, inport_dirn); break;
         // any custom algorithm
         //case CUSTOM_: outportComputeCustom(); break;
         default: outport = lookupRoutingTable(route.net_dest); break;
@@ -126,6 +127,8 @@ RoutingUnit::outportComputeXY(RouteInfo route,
                               int inport,
                               PortDirection inport_dirn)
 {
+    PortDirection outport_dirn = UNKNOWN_;
+
     int num_rows = m_router->get_net_ptr()->getNumRows();
     int num_cols = m_router->get_net_ptr()->getNumCols();
     assert(num_rows > 0 && num_cols > 0);
@@ -144,7 +147,8 @@ RoutingUnit::outportComputeXY(RouteInfo route,
     bool x_dirn = (dest_x >= my_x);
     bool y_dirn = (dest_y >= my_y);
 
-    PortDirection outport_dirn = UNKNOWN_;
+    // already checked that in outportCompute() function
+    assert(!(x_hops == 0 && y_hops == 0));
 
     if (x_hops > 0)
     {
@@ -188,6 +192,8 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
                                   int inport,
                                   PortDirection inport_dirn)
 {
+    PortDirection outport_dirn = UNKNOWN_;
+
     int num_rows = m_router->get_net_ptr()->getNumRows();
     int num_cols = m_router->get_net_ptr()->getNumCols();
     assert(num_rows > 0 && num_cols > 0);
@@ -205,8 +211,6 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
 
     bool x_dirn = (dest_x >= my_x);
     bool y_dirn = (dest_y >= my_y);
-
-    PortDirection outport_dirn = UNKNOWN_;
 
     // already checked that in outportCompute() function
     assert(!(x_hops == 0 && y_hops == 0));
@@ -239,6 +243,26 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
             outport_dirn = rand ? E_ : S_;
 
     }
+
+    return m_outports_dirn2idx[outport_dirn];
+}
+
+
+int
+RoutingUnit::outportComputeTurnModel(RouteInfo route,
+                                  int inport,
+                                  PortDirection inport_dirn)
+{
+    PortDirection outport_dirn = UNKNOWN_;
+
+    //////////////////////////////////////////////
+    // Interconnection Networks Lab 3
+    // Add your code here
+
+
+
+
+    /////////////////////////////////////////////
 
     return m_outports_dirn2idx[outport_dirn];
 }

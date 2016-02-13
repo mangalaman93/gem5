@@ -66,6 +66,10 @@ class RoutingUnit
                              int inport,
                              PortDirection inport_dirn);
 
+    int outportComputeTurnModel(RouteInfo route,
+                               int inport,
+                               PortDirection inport_dirn);
+
 
   private:
     Router *m_router;

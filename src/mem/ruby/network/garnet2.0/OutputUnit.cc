@@ -89,7 +89,8 @@ OutputUnit::has_credit(int out_vc)
 
 
 bool
-OutputUnit::has_free_vc(int vnet)
+OutputUnit::has_free_vc(int vnet,
+    PortDirection inport_dirn, PortDirection outport_dirn)
 {
     int vc_base = vnet*m_vc_per_vnet;
     for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
@@ -102,7 +103,8 @@ OutputUnit::has_free_vc(int vnet)
 }
 
 int
-OutputUnit::select_free_vc(int vnet)
+OutputUnit::select_free_vc(int vnet,
+    PortDirection inport_dirn, PortDirection outport_dirn)
 {
     int vc_base = vnet*m_vc_per_vnet;
     for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
@@ -124,11 +126,6 @@ OutputUnit::wakeup()
     if (m_credit_link->isReady(m_router->curCycle())) {
         flit *t_flit = m_credit_link->consumeLink();
         increment_credit(t_flit->get_vc());
-
-        // TODO: delete
-//        m_router->update_incredit(m_outvc_state[out_vc]->get_inport(),
-//                                  m_outvc_state[out_vc]->get_invc(),
-//                                  m_outvc_state[out_vc]->get_credit_count());
 
         if (t_flit->is_free_signal())
             set_vc_state(IDLE_, t_flit->get_vc(), m_router->curCycle());
