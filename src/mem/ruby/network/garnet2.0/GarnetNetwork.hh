@@ -139,6 +139,11 @@ class GarnetNetwork : public Network
         m_flit_queueing_latency[vnet] += latency;
     }
 
+    void
+    increment_total_hops(int hops)
+    {
+        m_total_hops += hops;
+    }
 
   protected:
     // Configuration
@@ -176,6 +181,9 @@ class GarnetNetwork : public Network
 
     Stats::Scalar m_average_link_utilization;
     Stats::Vector m_average_vc_load;
+
+    Stats::Scalar  m_total_hops;
+    Stats::Formula m_avg_hops;
 
   private:
     GarnetNetwork(const GarnetNetwork& obj);

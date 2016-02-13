@@ -45,6 +45,7 @@ class flit
     flit(int vc, bool is_free_signal, Cycles curTime);
     void set_outport(int port) { m_outport = port; }
     int get_outport() {return m_outport; }
+    void increment_hops() { m_route.hops++; }
     void print(std::ostream& out) const;
     bool is_free_signal() { return m_is_free_signal; }
     int get_size() { return m_size; }

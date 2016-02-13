@@ -183,6 +183,10 @@ NetworkInterface::wakeup()
             scheduleEventAbsolute(clockEdge(Cycles(1)));
 
         int vnet = t_flit->get_vnet();
+
+        // Update Stats
+
+        // Latency
         m_net_ptr->increment_received_flits(vnet);
         Cycles network_delay = curCycle() - t_flit->get_enqueue_time();
         Cycles queueing_delay = t_flit->get_delay();
@@ -195,6 +199,9 @@ NetworkInterface::wakeup()
             m_net_ptr->increment_packet_network_latency(network_delay, vnet);
             m_net_ptr->increment_packet_queueing_latency(queueing_delay, vnet);
         }
+
+        // Hops
+        m_net_ptr->increment_total_hops(t_flit->get_route().hops);
 
         delete t_flit;
     }
@@ -265,6 +272,8 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         route.net_dest = new_net_msg_ptr->getDestination();
         route.dest_ni = destID;
         route.dest_router = m_net_ptr->get_router_id(destID);
+        // initialize hops to -1, so that the first router increments it to 0
+        route.hops = -1;
 
         m_net_ptr->increment_injected_packets(vnet);
         for (int i = 0; i < num_flits; i++) {
