@@ -130,6 +130,9 @@ SwitchAllocator::arbitrate_inports()
 bool
 SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
 {
+    PortDirection inport_dirn  = m_input_unit[inport]->get_direction();
+    PortDirection outport_dirn = m_output_unit[outport]->get_direction();
+
     // Check if outvc needed
     // Check if credit needed (for multi-flit packet)
     // Check if ordering violated (in ordered vnet)
@@ -140,7 +143,7 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
 
     if (has_outvc == false) // needs outvc
     {
-        if (m_output_unit[outport]->has_free_vc(vnet))
+        if (m_output_unit[outport]->has_free_vc(vnet, inport_dirn, outport_dirn))
         {
             has_outvc = true;
             has_credit = true; // each VC has at least one buffer, so no need for additional credit check
@@ -267,8 +270,11 @@ SwitchAllocator::arbitrate_outports()
 int
 SwitchAllocator::select_free_vc(int outport, int inport, int invc)
 {
+    PortDirection inport_dirn  = m_input_unit[inport]->get_direction();
+    PortDirection outport_dirn = m_output_unit[outport]->get_direction();
+
     // Select a free VC from the output port
-    int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc));
+    int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), inport_dirn, outport_dirn);
     assert(outvc != -1); // has to get a valid VC since it checked before performing SA
     m_input_unit[inport]->grant_outvc(invc, outvc);
     return outvc;
