@@ -65,12 +65,14 @@ parser.add_option("--precision", type="int", default=3,
 parser.add_option("--sim-cycles", type="int", default=1000,
                    help="Number of simulation cycles")
 
-parser.add_option("--fixed-pkts", action="store_true",
-                  help="Network_test: inject --maxpackets and stop")
+parser.add_option("--num-packets-max", type="int", default=-1,
+                  help="Stop injecting after --num-packets-max")
 
-parser.add_option("--maxpackets", type="int", default=1,
-                  help="Stop injecting after --maxpackets. \
-                        Works only with --fixed-pkts")
+parser.add_option("--single-sender-id", type="int", default=-1,
+                  help="Only inject from this sender")
+
+parser.add_option("--single-dest-id", type="int", default=-1,
+                  help="Only send to this destination")
 
 #
 # Add the ruby specific and protocol specific options
@@ -93,8 +95,9 @@ if options.num_cpus > block_size:
      sys.exit(1)
 
 
-cpus = [ NetworkTest(fixed_pkts=options.fixed_pkts,
-                     max_packets=options.maxpackets,
+cpus = [ NetworkTest(num_packets_max=options.num_packets_max,
+                     single_sender=options.single_sender_id,
+                     single_dest=options.single_dest_id,
                      sim_cycles=options.sim_cycles,
                      traffic_type=options.synthetic,
                      inj_rate=options.injectionrate,

@@ -37,8 +37,10 @@ class NetworkTest(MemObject):
     num_memories = Param.Int(1, "Num Memories")
     memory_size = Param.Int(65536, "memory size")
     sim_cycles = Param.Int(1000, "Number of simulation cycles")
-    fixed_pkts = Param.Bool(False, "Send fixed number of packets")
-    max_packets = Param.Counter(0, "Number of packets to send when in fixed_pkts mode")
+    num_packets_max = Param.Int(-1, "Max number of packets to send. \
+                        Default is to keep sending till simulation ends")
+    single_sender = Param.Int(-1, "Send only from this node. By default every node sends")
+    single_dest   = Param.Int(-1, "Send only to this dest. Default depends on traffic_type")
     traffic_type = Param.Counter(0, "Traffic type: uniform random, tornado, bit complement")
     inj_rate = Param.Float(0.1, "Packet injection rate")
     precision = Param.Int(3, "Number of digits of precision after decimal point")

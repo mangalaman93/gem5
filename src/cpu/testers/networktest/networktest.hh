@@ -118,9 +118,10 @@ class NetworkTest : public MemObject
 
     int numMemories;
     Tick simCycles;
-    bool fixedPkts;
-    int maxPackets;
+    int numPacketsMax;
     int numPacketsSent;
+    int singleSender;
+    int singleDest;
 
     int trafficType;
     double injRate;
