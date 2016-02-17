@@ -82,9 +82,10 @@ NetworkTest::NetworkTest(const Params *p)
       blockSizeBits(p->block_offset),
       numMemories(p->num_memories),
       simCycles(p->sim_cycles),
-      fixedPkts(p->fixed_pkts),
-      maxPackets(p->max_packets),
+      numPacketsMax(p->num_packets_max),
       numPacketsSent(0),
+      singleSender(p->single_sender),
+      singleDest(p->single_dest),
       trafficType(p->traffic_type),
       injRate(p->inj_rate),
       precision(p->precision),
@@ -143,23 +144,26 @@ NetworkTest::tick()
     // (injection rate's range depends on precision)
     // - generate a random number between 0 and 10^precision
     // - send pkt if this number is < injRate*(10^precision)
-    bool send_this_cycle;
+    bool sendAllowedThisCycle;
     double injRange = pow((double) 10, (double) precision);
     unsigned trySending = random_mt.random<unsigned>(0, (int) injRange);
     if (trySending < injRate*injRange)
-        send_this_cycle = true;
+        sendAllowedThisCycle = true;
     else
-        send_this_cycle = false;
+        sendAllowedThisCycle = false;
 
-    // always generatePkt unless fixedPkts is enabled
-    if (send_this_cycle) {
-        if (fixedPkts) {
-            if (numPacketsSent < maxPackets) {
-                generatePkt();
-            }
-        } else {
+    // always generatePkt unless fixedPkts or singleSender is enabled
+    if (sendAllowedThisCycle) {
+        bool senderEnable = true;
+
+        if (numPacketsMax >= 0 && numPacketsSent >= numPacketsMax)
+            senderEnable = false;
+
+        if (singleSender >= 0 && id != singleSender)
+            senderEnable = false;
+
+        if (senderEnable)
             generatePkt();
-        }
     }
 
     // Schedule wakeup
@@ -175,7 +179,11 @@ void
 NetworkTest::generatePkt()
 {
     unsigned destination = id;
-    if (trafficType == 0) { // Uniform Random
+    if (singleDest >= 0)
+    {
+        destination = singleDest;
+    }
+    else if (trafficType == 0) { // Uniform Random
         destination = random_mt.random<unsigned>(0, numMemories - 1);
     } else if (trafficType == 1) { // Tornado
         int networkDimension = (int) sqrt(numMemories);
