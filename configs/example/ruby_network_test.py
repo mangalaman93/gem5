@@ -49,8 +49,16 @@ parser = optparse.OptionParser()
 Options.addCommonOptions(parser)
 
 parser.add_option("--synthetic", type="int", default=0,
-                  help="Synthetic Traffic type. 0 = Uniform Random,\
-                        1 = Tornado, 2 = Bit Complement")
+                  help="Synthetic Traffic type. \
+                        0 = Uniform Random,\
+                        1 = Tornado,\
+                        2 = Bit Complement\
+                        3 = Bit Reverse\
+                        4 = Bit Rotation\
+                        5 = Neighbor\
+                        6 = Shuffle\
+                        7 = Transpose\
+                        ")
 
 parser.add_option("-i", "--injectionrate", type="float", default=0.1,
                   metavar="I",
