@@ -42,6 +42,16 @@
 #include "sim/sim_object.hh"
 #include "sim/stats.hh"
 
+enum TrafficType {UNIFORM_RANDOM_ = 0,
+                  TORNADO_ = 1,
+                  BIT_COMPLEMENT_ = 2,
+                  BIT_REVERSE_ = 3,
+                  BIT_ROTATION_ = 4,
+                  NEIGHBOR_ = 5,
+                  SHUFFLE_ = 6,
+                  TRANSPOSE_ = 7,
+                  NUM_TRAFFIC_PATTERNS_};
+
 class Packet;
 class NetworkTest : public MemObject
 {
