@@ -84,9 +84,6 @@ SwitchAllocator::wakeup()
 
     clear_request_vector();
     check_for_wakeup();
-
-    // One-cycle SA/VA + ST
-    m_router->switch_traversal();
 }
 
 void
@@ -123,6 +120,98 @@ SwitchAllocator::arbitrate_inports()
             invc++;
             if (invc >= m_num_vcs)
                 invc = 0;
+        }
+    }
+}
+
+void
+SwitchAllocator::arbitrate_outports()
+{
+    // Now there are a set of input vc requests for output vcs.
+    // Again do round robin arbitration on these requests
+    // Independent arbiter at each output port
+    for (int outport = 0; outport < m_num_outports; outport++) {
+        int inport = m_round_robin_inport[outport];
+        m_round_robin_inport[outport]++;
+
+        if (m_round_robin_inport[outport] >= m_num_inports)
+            m_round_robin_inport[outport] = 0;
+
+        for (int inport_iter = 0; inport_iter < m_num_inports; inport_iter++) {
+
+            // inport has a request this cycle for outport
+            if (m_port_requests[outport][inport]) {
+
+                // grant this outport to this inport
+                int invc = m_vc_winners[outport][inport];
+                int outvc = m_input_unit[inport]->get_outvc(invc);
+                if (outvc == -1)
+                {
+                    // VC Allocation - select any free VC from outport
+                    outvc = vc_allocate(outport, inport, invc);
+                }
+
+                // remove flit from Input VC
+                flit *t_flit = m_input_unit[inport]->getTopFlit(invc);
+
+                DPRINTF(RubyNetwork, "SwitchAllocator at Router %d \
+                                      granted outvc %d at outport %d \
+                                      to invc %d at inport %d at time: %lld\n",
+                        m_router->get_id(), outvc,
+                        m_router->getPortDirectionName(
+                            m_output_unit[outport]->get_direction()),
+                        invc,
+                        m_router->getPortDirectionName(
+                            m_input_unit[inport]->get_direction()),
+                        m_router->curCycle());
+
+
+                // flit ready for Switch Traversal
+                // the outport was already updated in the flit
+                // in the InputUnit (after route_compute)
+                t_flit->advance_stage(ST_, m_router->curCycle());
+
+                // update outport field in switch
+                // (used by switch code to send it out of correct outport
+                t_flit->set_outport(outport);
+
+                // set outvc (i.e., invc for next hop) in flit
+                t_flit->set_vc(outvc);
+                m_output_unit[outport]->decrement_credit(outvc);
+
+                m_router->grant_switch(inport, t_flit);
+                m_output_arbiter_activity++;
+
+                if ((t_flit->get_type() == TAIL_) ||
+                    t_flit->get_type() == HEAD_TAIL_) {
+
+                    // This Input VC should now be empty
+                    assert(m_input_unit[inport]->isReady(invc,
+                        m_router->curCycle()) == false);
+
+                    // Free this VC
+                    m_input_unit[inport]->set_vc_idle(invc, m_router->curCycle());
+
+                    // Send a credit back
+                    // along with the information that this VC is now idle
+                    m_input_unit[inport]->increment_credit(invc, true,
+                        m_router->curCycle());
+                } else {
+                    // Send a credit back
+                    // but do not indicate that the VC is idle
+                    m_input_unit[inport]->increment_credit(invc, false,
+                        m_router->curCycle());
+                }
+
+                // remove this request
+                m_port_requests[outport][inport] = false;
+
+                break; // got a input winner for this outport
+            }
+
+            inport++;
+            if (inport >= m_num_inports)
+                inport = 0;
         }
     }
 }
@@ -178,97 +267,8 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     return true;
 }
 
-
-void
-SwitchAllocator::arbitrate_outports()
-{
-    // Now there are a set of input vc requests for output vcs.
-    // Again do round robin arbitration on these requests
-    // Independent arbiter at each output port
-    for (int outport = 0; outport < m_num_outports; outport++) {
-        int inport = m_round_robin_inport[outport];
-        m_round_robin_inport[outport]++;
-
-        if (m_round_robin_inport[outport] >= m_num_inports)
-            m_round_robin_inport[outport] = 0;
-
-        for (int inport_iter = 0; inport_iter < m_num_inports; inport_iter++) {
-
-            // inport has a request this cycle for outport
-            if (m_port_requests[outport][inport]) {
-
-                // grant this outport to this inport
-                int invc = m_vc_winners[outport][inport];
-                int outvc = m_input_unit[inport]->get_outvc(invc);
-                if (outvc == -1)
-                {
-                    // VC Selection (simplified VC Allocation)
-                    outvc = select_free_vc(outport, inport, invc);
-                }
-
-                // remove flit from Input VC
-                flit *t_flit = m_input_unit[inport]->getTopFlit(invc);
-
-                DPRINTF(RubyNetwork, "SwitchAllocator at Router %d \
-                                      granted outvc %d at outport %d \
-                                      to invc %d at inport %d at time: %lld\n",
-                        m_router->get_id(), outvc,
-                        m_router->getPortDirectionName(
-                            m_output_unit[outport]->get_direction()),
-                        invc,
-                        m_router->getPortDirectionName(
-                            m_input_unit[inport]->get_direction()),
-                        m_router->curCycle());
-
-
-                // set stage to ST for it to correctly traverse switch
-                // the outport was already updated in the flit
-                // in the InputUnit (after route_compute)
-                t_flit->advance_stage(ST_, m_router->curCycle());
-
-                // set outvc (i.e., invc for next hop) in flit
-                t_flit->set_vc(outvc);
-                m_output_unit[outport]->decrement_credit(outvc);
-
-                m_router->grant_switch(inport, t_flit);
-                m_output_arbiter_activity++;
-
-                if ((t_flit->get_type() == TAIL_) ||
-                    t_flit->get_type() == HEAD_TAIL_) {
-
-                    // This Input VC should now be empty
-                    assert(m_input_unit[inport]->isReady(invc,
-                        m_router->curCycle()) == false);
-
-                    // Free this VC
-                    m_input_unit[inport]->set_vc_idle(invc, m_router->curCycle());
-
-                    // Send a credit back
-                    // along with the information that this VC is now idle
-                    m_input_unit[inport]->increment_credit(invc, true,
-                        m_router->curCycle());
-                } else {
-                    // Send a credit back
-                    // but do not indicate that the VC is idle
-                    m_input_unit[inport]->increment_credit(invc, false,
-                        m_router->curCycle());
-                }
-
-                // remove this request
-                m_port_requests[outport][inport] = false;
-
-                break; // got a input winner for this outport
-            }
-
-            inport++;
-            if (inport >= m_num_inports)
-                inport = 0;
-        }
-    }
-}
-
 int
-SwitchAllocator::select_free_vc(int outport, int inport, int invc)
+SwitchAllocator::vc_allocate(int outport, int inport, int invc)
 {
     PortDirection inport_dirn  = m_input_unit[inport]->get_direction();
     PortDirection outport_dirn = m_output_unit[outport]->get_direction();
@@ -288,7 +288,7 @@ SwitchAllocator::check_for_wakeup()
     for (int i = 0; i < m_num_inports; i++) {
         for (int j = 0; j < m_num_vcs; j++) {
             if (m_input_unit[i]->need_stage(j, SA_, nextCycle)) {
-                m_router->swalloc_req();
+                m_router->schedule_wakeup(Cycles(1));
                 return;
             }
         }

@@ -62,10 +62,10 @@ class flit
     flit_type get_type() { return m_type; }
 
     bool
-    is_stage(flit_stage t_stage, Cycles curTime)
+    is_stage(flit_stage stage, Cycles time)
     {
-        return (m_stage.first == t_stage &&
-                curTime >= m_stage.second);
+        return (stage == m_stage.first &&
+                time >= m_stage.second);
     }
 
     void

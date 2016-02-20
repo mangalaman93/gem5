@@ -63,10 +63,11 @@ class GarnetNetwork : public Network
     int getNumCols() { return m_num_cols; }
 
     // for network
-    int getNiFlitSize() const { return m_ni_flit_size; }
-    int getVCsPerVnet() const { return m_vcs_per_vnet; }
-    int getBuffersPerDataVC() { return m_buffers_per_data_vc; }
-    int getBuffersPerCtrlVC() { return m_buffers_per_ctrl_vc; }
+    uint32_t getNiFlitSize() const { return m_ni_flit_size; }
+    uint32_t getNumPipeStages() const { return m_num_pipe_stages; }
+    uint32_t getVCsPerVnet() const { return m_vcs_per_vnet; }
+    uint32_t getBuffersPerDataVC() { return m_buffers_per_data_vc; }
+    uint32_t getBuffersPerCtrlVC() { return m_buffers_per_ctrl_vc; }
     int getRoutingAlgorithm() const { return m_routing_algorithm; }
 
     bool isFaultModelEnabled() const { return m_enable_fault_model; }
@@ -149,10 +150,11 @@ class GarnetNetwork : public Network
     // Configuration
     int m_num_rows;
     int m_num_cols;
-    int m_ni_flit_size;
-    int m_vcs_per_vnet;
-    int m_buffers_per_ctrl_vc;
-    int m_buffers_per_data_vc;
+    uint32_t m_ni_flit_size;
+    uint32_t m_num_pipe_stages;
+    uint32_t m_vcs_per_vnet;
+    uint32_t m_buffers_per_ctrl_vc;
+    uint32_t m_buffers_per_data_vc;
     int m_routing_algorithm;
     bool m_enable_fault_model;
 

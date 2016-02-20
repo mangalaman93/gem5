@@ -65,10 +65,6 @@ OutputUnit::decrement_credit(int out_vc)
             m_router->get_id(), m_id, out_vc, m_router->curCycle());
 
     m_outvc_state[out_vc]->decrement_credit();
-// TODO: delete
-//    m_router->update_incredit(m_outvc_state[out_vc]->get_inport(),
-//                              m_outvc_state[out_vc]->get_invc(),
-//                              m_outvc_state[out_vc]->get_credit_count());
 }
 
 void

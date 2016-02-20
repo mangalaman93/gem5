@@ -51,6 +51,7 @@ GarnetNetwork::GarnetNetwork(const Params *p)
 {
     m_num_rows = p->num_rows;
     m_ni_flit_size = p->ni_flit_size;
+    m_num_pipe_stages = p->num_pipe_stages;
     m_vcs_per_vnet = p->vcs_per_vnet;
     m_buffers_per_data_vc = p->buffers_per_data_vc;
     m_buffers_per_ctrl_vc = p->buffers_per_ctrl_vc;

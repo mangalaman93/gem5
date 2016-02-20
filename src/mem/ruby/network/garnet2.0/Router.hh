@@ -34,6 +34,7 @@
 #include <iostream>
 #include <vector>
 
+#include "mem/ruby/common/Consumer.hh"
 #include "mem/ruby/common/NetDest.hh"
 #include "mem/ruby/network/BasicRouter.hh"
 #include "mem/ruby/network/garnet2.0/CommonTypes.hh"
@@ -50,13 +51,16 @@ class SwitchAllocator;
 class CrossbarSwitch;
 class FaultModel;
 
-class Router : public BasicRouter
+class Router : public BasicRouter, public Consumer
 {
   public:
     typedef GarnetRouterParams Params;
     Router(const Params *p);
 
     ~Router();
+
+    void wakeup();
+    void print(std::ostream& out) const {};
 
     void init();
     void addInPort(PortDirection inport_dirn, NetworkLink *link, CreditLink *credit_link);
@@ -83,9 +87,8 @@ class Router : public BasicRouter
     PortDirection getInportDirection(int inport);
 
     int route_compute(RouteInfo route, int inport, PortDirection direction);
-    void swalloc_req();
     void grant_switch(int inport, flit *t_flit);
-    void switch_traversal();
+    void schedule_wakeup(Cycles time);
 
     std::string getPortDirectionName(PortDirection direction);
     void printFaultVector(std::ostream& out);
