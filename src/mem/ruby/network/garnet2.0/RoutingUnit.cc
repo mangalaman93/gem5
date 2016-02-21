@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2008 Princeton University
+/* Copyright (c) 2008 Princeton University
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -259,10 +258,58 @@ RoutingUnit::outportComputeTurnModel(RouteInfo route,
     // Interconnection Networks Lab 3
     // Add your code here
 
+    int num_rows = m_router->get_net_ptr()->getNumRows();
+    int num_cols = m_router->get_net_ptr()->getNumCols();
+    assert(num_rows > 0 && num_cols > 0);
 
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+    int my_y = my_id / num_cols;
 
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+    int dest_y = dest_id / num_cols;
+
+    int x_hops = abs(dest_x - my_x);
+    int y_hops = abs(dest_y - my_y);
+
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
+
+    // already checked that in outportCompute() function
+    assert(!(x_hops == 0 && y_hops == 0));
+
+    if (x_hops == 0)
+    {
+        if (y_dirn > 0)
+            outport_dirn = N_;
+        else
+            outport_dirn = S_;
+    }
+    else if (y_hops == 0)
+    {
+        if (x_dirn > 0)
+            outport_dirn = E_;
+        else
+            outport_dirn = W_;
+    }
+    else
+    {
+        int rand = random() % 2;
+
+        if (x_dirn && y_dirn) // Quadrant I
+            outport_dirn = rand ? E_ : N_;
+        else if (!x_dirn && y_dirn) // Quadrant II
+            outport_dirn = W_ ;
+        else if (!x_dirn && !y_dirn) // Quadrant III
+            outport_dirn = W_ ;
+        else // Quadrant IV
+            outport_dirn = rand ? E_ : S_;
+
+    }
 
     /////////////////////////////////////////////
 
     return m_outports_dirn2idx[outport_dirn];
 }
+
