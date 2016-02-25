@@ -55,10 +55,13 @@ class OutputUnit : public Consumer
     void decrement_credit(int out_vc);
     void increment_credit(int out_vc);
     bool has_credit(int out_vc);
+    bool isSetNotAllowedWestFirst(RouteInfo route);
     bool has_free_vc(int vnet,
-        PortDirection inport_dirn, PortDirection outport_dirn);
+        PortDirection inport_dirn, PortDirection outport_dirn,
+        int invc, RouteInfo route);
     int select_free_vc(int vnet,
-        PortDirection inport_dirn, PortDirection outport_dirn);
+        PortDirection inport_dirn, PortDirection outport_dirn,
+        int invc, RouteInfo route);
 
     inline PortDirection get_direction() { return m_direction; }
 

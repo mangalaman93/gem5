@@ -83,16 +83,40 @@ OutputUnit::has_credit(int out_vc)
     return m_outvc_state[out_vc]->has_credit();
 }
 
+bool
+OutputUnit::isSetNotAllowedWestFirst(RouteInfo route) {
+    int num_cols = m_router->get_net_ptr()->getNumCols();
+
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+
+    return !(dest_x >= my_x);
+}
 
 bool
 OutputUnit::has_free_vc(int vnet,
-    PortDirection inport_dirn, PortDirection outport_dirn)
+    PortDirection inport_dirn, PortDirection outport_dirn,
+    int invc, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
-    {
-        if (is_vc_idle(vc, m_router->curCycle()))
+    int escape_vc = vc_base + m_vc_per_vnet - 1;
+    if (invc == escape_vc) {
+        if (is_vc_idle(escape_vc, m_router->curCycle()))
             return true;
+    } else {
+        bool flag = isSetNotAllowedWestFirst(route);
+        for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
+        {
+            if (flag && (vc == escape_vc)) {
+                continue;
+            }
+
+            if (is_vc_idle(vc, m_router->curCycle()))
+                return true;
+        }
     }
 
     return false;
@@ -100,15 +124,30 @@ OutputUnit::has_free_vc(int vnet,
 
 int
 OutputUnit::select_free_vc(int vnet,
-    PortDirection inport_dirn, PortDirection outport_dirn)
+    PortDirection inport_dirn, PortDirection outport_dirn,
+    int invc, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
-    {
-        if (is_vc_idle(vc, m_router->curCycle()))
+    int escape_vc = vc_base + m_vc_per_vnet - 1;
+    if (invc == escape_vc) {
+        if (is_vc_idle(escape_vc, m_router->curCycle()))
         {
-            m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
-            return vc;
+             m_outvc_state[escape_vc]->setState(ACTIVE_, m_router->curCycle());
+             return escape_vc;
+        }
+    } else {
+        bool flag = isSetNotAllowedWestFirst(route);
+        for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
+        {
+            if (flag && (vc == escape_vc)) {
+                continue;
+            }
+
+            if (is_vc_idle(vc, m_router->curCycle()))
+            {
+                m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
+                return vc;
+            }
         }
     }
 

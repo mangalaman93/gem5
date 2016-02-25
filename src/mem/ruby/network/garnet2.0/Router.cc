@@ -157,9 +157,9 @@ Router::getInportDirection(int inport)
 }
 
 int
-Router::route_compute(RouteInfo route, int inport, PortDirection inport_dirn)
+Router::route_compute(RouteInfo route, int inport, PortDirection inport_dirn, int invc, int escape_vc)
 {
-    return m_routing_unit->outportCompute(route, inport, inport_dirn);
+    return m_routing_unit->outportCompute(route, inport, inport_dirn, invc, escape_vc);
 }
 
 void

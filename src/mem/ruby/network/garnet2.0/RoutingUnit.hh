@@ -46,7 +46,9 @@ class RoutingUnit
     RoutingUnit(Router *router);
     int outportCompute(RouteInfo route,
                       int inport,
-                      PortDirection inport_dirn);
+                      PortDirection inport_dirn,
+                      int invc,
+                      int escape_vc);
 
     // Topology-agnostic Routing Table based routing (default)
     void addRoute(const NetDest& routing_table_entry);

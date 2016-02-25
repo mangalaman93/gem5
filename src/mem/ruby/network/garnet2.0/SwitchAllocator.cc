@@ -232,7 +232,8 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
 
     if (has_outvc == false) // needs outvc
     {
-        if (m_output_unit[outport]->has_free_vc(vnet, inport_dirn, outport_dirn))
+        RouteInfo route = m_input_unit[inport]->peekTopFlit(invc)->get_route();
+        if (m_output_unit[outport]->has_free_vc(vnet, inport_dirn, outport_dirn, invc, route))
         {
             has_outvc = true;
             has_credit = true; // each VC has at least one buffer, so no need for additional credit check
@@ -274,7 +275,8 @@ SwitchAllocator::vc_allocate(int outport, int inport, int invc)
     PortDirection outport_dirn = m_output_unit[outport]->get_direction();
 
     // Select a free VC from the output port
-    int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), inport_dirn, outport_dirn);
+    RouteInfo route = m_input_unit[inport]->peekTopFlit(invc)->get_route();
+    int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), inport_dirn, outport_dirn, invc, route);
     assert(outvc != -1); // has to get a valid VC since it checked before performing SA
     m_input_unit[inport]->grant_outvc(invc, outvc);
     return outvc;
