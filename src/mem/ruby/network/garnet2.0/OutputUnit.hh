@@ -56,6 +56,7 @@ class OutputUnit : public Consumer
     void increment_credit(int out_vc);
     bool has_credit(int out_vc);
     bool isSetNotAllowedWestFirst(RouteInfo route);
+    bool isSetNotAllowedXY(RouteInfo route, PortDirection outport_dirn);
     bool has_free_vc(int vnet,
         PortDirection inport_dirn, PortDirection outport_dirn,
         int invc, RouteInfo route);

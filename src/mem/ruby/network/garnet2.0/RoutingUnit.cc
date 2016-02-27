@@ -106,7 +106,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport, PortDirection inport_di
 
     RoutingAlgorithm routing_algorithm = (RoutingAlgorithm) m_router->get_net_ptr()->getRoutingAlgorithm();
     if(invc == escape_vc) {
-        routing_algorithm = TURN_MODEL_;
+        routing_algorithm = XY_;
     } else {
         routing_algorithm = RANDOM_;
     }
@@ -158,12 +158,12 @@ RoutingUnit::outportComputeXY(RouteInfo route,
     {
         if (x_dirn)
         {
-            assert(inport_dirn == L_ || inport_dirn == W_);
+            // assert(inport_dirn == L_ || inport_dirn == W_);
             outport_dirn = E_;
         }
         else
         {
-            assert(inport_dirn == L_ || inport_dirn == E_);
+            // assert(inport_dirn == L_ || inport_dirn == E_);
             outport_dirn = W_;
         }
     }

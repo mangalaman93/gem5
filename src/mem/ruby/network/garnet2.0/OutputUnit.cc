@@ -97,6 +97,34 @@ OutputUnit::isSetNotAllowedWestFirst(RouteInfo route) {
 }
 
 bool
+OutputUnit::isSetNotAllowedXY(RouteInfo route, PortDirection outport_dirn) {
+    int num_rows = m_router->get_net_ptr()->getNumRows();
+    int num_cols = m_router->get_net_ptr()->getNumCols();
+    assert(num_rows > 0 && num_cols > 0);
+
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+    int my_y = my_id / num_cols;
+
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+    int dest_y = dest_id / num_cols;
+
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
+
+    int x_hops = abs(dest_x - my_x);
+    int y_hops = abs(dest_y - my_y);
+
+    if (x_hops == 0 || y_hops == 0) {
+        return false;
+    } else {
+        return ((outport_dirn == N_ && ((x_dirn && y_dirn) || (!x_dirn && y_dirn))) ||
+                (outport_dirn == N_ && ((!x_dirn && !y_dirn) || (x_dirn && !y_dirn))));
+    }
+}
+
+bool
 OutputUnit::has_free_vc(int vnet,
     PortDirection inport_dirn, PortDirection outport_dirn,
     int invc, RouteInfo route)
@@ -107,7 +135,7 @@ OutputUnit::has_free_vc(int vnet,
         if (is_vc_idle(escape_vc, m_router->curCycle()))
             return true;
     } else {
-        bool flag = isSetNotAllowedWestFirst(route);
+        bool flag = isSetNotAllowedXY(route, outport_dirn);
         for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
         {
             if (flag && (vc == escape_vc)) {
@@ -136,7 +164,7 @@ OutputUnit::select_free_vc(int vnet,
              return escape_vc;
         }
     } else {
-        bool flag = isSetNotAllowedWestFirst(route);
+        bool flag = isSetNotAllowedXY(route, outport_dirn);
         for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
         {
             if (flag && (vc == escape_vc)) {
