@@ -102,18 +102,12 @@ OutputUnit::has_free_vc(int vnet,
     int invc, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    int escape_vc = vc_base + m_vc_per_vnet - 1;
-    if (invc == escape_vc) {
-        if (is_vc_idle(escape_vc, m_router->curCycle()))
-            return true;
-    } else {
-        bool flag = isSetNotAllowedWestFirst(route);
-        for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
-        {
-            if (flag && (vc == escape_vc)) {
-                continue;
-            }
+    int escape_vc = vc_base + m_vc_per_vnet - 4;
 
+    bool flag = isSetNotAllowedWestFirst(route);
+    for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++) {
+        if(((invc >= escape_vc) && vc >= escape_vc) ||
+           ((invc < escape_vc) && (!flag || vc < escape_vc))) {
             if (is_vc_idle(vc, m_router->curCycle()))
                 return true;
         }
@@ -128,24 +122,14 @@ OutputUnit::select_free_vc(int vnet,
     int invc, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    int escape_vc = vc_base + m_vc_per_vnet - 1;
-    if (invc == escape_vc) {
-        if (is_vc_idle(escape_vc, m_router->curCycle()))
-        {
-             m_outvc_state[escape_vc]->setState(ACTIVE_, m_router->curCycle());
-             return escape_vc;
-        }
-    } else {
-        bool flag = isSetNotAllowedWestFirst(route);
-        for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++)
-        {
-            if (flag && (vc == escape_vc)) {
-                continue;
-            }
+    int escape_vc = vc_base + m_vc_per_vnet - 4;
 
-            if (is_vc_idle(vc, m_router->curCycle()))
-            {
-                m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
+    bool flag = isSetNotAllowedWestFirst(route);
+    for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++) {
+        if(((invc >= escape_vc) && vc >= escape_vc) ||
+           ((invc < escape_vc) && (!flag || vc < escape_vc))) {
+            if (is_vc_idle(vc, m_router->curCycle())) {
+                 m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
                 return vc;
             }
         }

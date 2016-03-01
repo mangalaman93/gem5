@@ -105,7 +105,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport, PortDirection inport_di
     }
 
     RoutingAlgorithm routing_algorithm = (RoutingAlgorithm) m_router->get_net_ptr()->getRoutingAlgorithm();
-    if(invc == escape_vc) {
+    if(invc >= escape_vc) {
         routing_algorithm = TURN_MODEL_;
     } else {
         routing_algorithm = RANDOM_;
