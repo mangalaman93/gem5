@@ -116,9 +116,9 @@ class InputUnit : public Consumer
     }
 
     inline bool
-    need_stage(int vc, flit_stage stage, Cycles cTime)
+    need_stage(int vc, flit_stage stage, Cycles time)
     {
-        return m_vcs[vc]->need_stage(stage, cTime);
+        return m_vcs[vc]->need_stage(stage, time);
     }
 
     inline bool
@@ -156,6 +156,7 @@ class InputUnit : public Consumer
     PortDirection m_direction;
     int m_num_vcs;
     int m_vc_per_vnet;
+    Cycles m_pipeline_delay;
 
     Router *m_router;
     NetworkLink *m_in_link;

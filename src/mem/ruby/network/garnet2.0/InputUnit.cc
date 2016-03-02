@@ -45,6 +45,7 @@ InputUnit::InputUnit(int id, PortDirection direction, Router *router)
     m_router = router;
     m_num_vcs = m_router->get_num_vcs();
     m_vc_per_vnet = m_router->get_vc_per_vnet();
+    m_pipeline_delay = Cycles(m_router->get_net_ptr()->getNumPipeStages());
 
     m_num_buffer_reads.resize(m_num_vcs/m_vc_per_vnet);
     m_num_buffer_writes.resize(m_num_vcs/m_vc_per_vnet);
@@ -73,10 +74,6 @@ InputUnit::wakeup()
     flit *t_flit;
     if (m_in_link->isReady(m_router->curCycle())) {
 
-    DPRINTF(RubyNetwork, "Router %d InputUnit %d woke up at time: %lld\n",
-            m_router->get_id(), m_router->getPortDirectionName(m_direction), m_router->curCycle());
-
-
         t_flit = m_in_link->consumeLink();
         int vc = t_flit->get_vc();
         t_flit->increment_hops(); // for stats
@@ -92,13 +89,11 @@ InputUnit::wakeup()
 
             // Update output port in VC
             // All flits in this packet will use this output port
-            // For simplicity, also updating the outport field in the flit
+            // The output port field in the flit is updated after it wins SA
             grant_outport(vc, outport);
-            t_flit->set_outport(m_vcs[vc]->get_outport());
 
         } else {
             assert(m_vcs[vc]->get_state() == ACTIVE_);
-            t_flit->set_outport(m_vcs[vc]->get_outport());
         }
 
 
@@ -111,11 +106,11 @@ InputUnit::wakeup()
         m_num_buffer_writes[vnet]++;
         m_num_buffer_reads[vnet]++;
 
-
-        // Switch Allocation Request (for next cycle)
-        // VC for next router is allocated during SA
-        t_flit->advance_stage(SA_, m_router->curCycle() + Cycles(1));
-        m_router->swalloc_req();
+        // This is the first-stage of the router
+        // Wait for (m_pipeline_delay - 1) cycles before
+        // performing Switch Allocation
+        Cycles wait_time = m_pipeline_delay - Cycles(1);
+        t_flit->advance_stage(SA_, m_router->curCycle() + wait_time);
     }
 }
 

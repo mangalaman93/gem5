@@ -31,6 +31,7 @@
 #include "mem/ruby/network/garnet2.0/Router.hh"
 
 #include "base/stl_helpers.hh"
+#include "debug/RubyNetwork.hh"
 #include "mem/ruby/network/garnet2.0/CreditLink.hh"
 #include "mem/ruby/network/garnet2.0/CrossbarSwitch.hh"
 #include "mem/ruby/network/garnet2.0/GarnetNetwork.hh"
@@ -44,7 +45,7 @@ using namespace std;
 using m5::stl_helpers::deletePointers;
 
 Router::Router(const Params *p)
-    : BasicRouter(p)
+    : BasicRouter(p), Consumer(this)
 {
     m_virtual_networks = p->virt_nets;
     m_vc_per_vnet = p->vcs_per_vnet;
@@ -77,6 +78,35 @@ Router::init()
 }
 
 void
+Router::wakeup()
+{
+    DPRINTF(RubyNetwork, "Router %d woke up\n", m_id);
+
+    // check for incoming flits
+    for (int inport = 0; inport < m_input_unit.size(); inport++)
+    {
+        m_input_unit[inport]->wakeup();
+    }
+
+    // check for incoming credits
+    // Note: the credit update is happening before SA
+    // buffer turnaround time =
+    //     credit traversal (1-cycle) + SA (1-cycle) + Link Traversal (1-cycle)
+    // if we want the credit update to take place after SA, this loop should
+    // be moved after the SA request
+    for (int outport = 0; outport < m_output_unit.size(); outport++)
+    {
+        m_output_unit[outport]->wakeup();
+    }
+
+    // Switch Allocation
+    m_sw_alloc->wakeup();
+
+    // Switch Traversal
+    m_switch->wakeup();
+}
+
+void
 Router::addInPort(PortDirection inport_dirn,
                   NetworkLink *in_link, CreditLink *credit_link)
 {
@@ -85,7 +115,7 @@ Router::addInPort(PortDirection inport_dirn,
 
     input_unit->set_in_link(in_link);
     input_unit->set_credit_link(credit_link);
-    in_link->setLinkConsumer(input_unit);
+    in_link->setLinkConsumer(this);
     credit_link->setSourceQueue(input_unit->getCreditQueue());
 
     m_input_unit.push_back(input_unit);
@@ -104,7 +134,7 @@ Router::addOutPort(PortDirection outport_dirn,
 
     output_unit->set_out_link(out_link);
     output_unit->set_credit_link(credit_link);
-    credit_link->setLinkConsumer(output_unit);
+    credit_link->setLinkConsumer(this);
     out_link->setSourceQueue(output_unit->getOutQueue());
 
     m_output_unit.push_back(output_unit);
@@ -133,25 +163,16 @@ Router::route_compute(RouteInfo route, int inport, PortDirection inport_dirn)
 }
 
 void
-Router::swalloc_req()
-{
-    m_sw_alloc->scheduleEventAbsolute(clockEdge(Cycles(1)));
-}
-
-void
 Router::grant_switch(int inport, flit *t_flit)
 {
     m_switch->update_sw_winner(inport, t_flit);
-
-    // One-cycle SA/VA + ST
-//    m_switch->scheduleEventAbsolute(clockEdge(Cycles(1)));
-//    t_flit->set_time(curCycle() + Cycles(1));
 }
 
 void
-Router::switch_traversal()
+Router::schedule_wakeup(Cycles time)
 {
-    m_switch->wakeup();
+    // wake up after time cycles
+    scheduleEvent(time);
 }
 
 std::string

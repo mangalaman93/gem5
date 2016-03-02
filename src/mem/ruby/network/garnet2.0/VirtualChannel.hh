@@ -42,7 +42,7 @@ class VirtualChannel
     VirtualChannel(int id);
     ~VirtualChannel();
 
-    bool need_stage(flit_stage stage, Cycles curTime);
+    bool need_stage(flit_stage stage, Cycles time);
     void set_idle(Cycles curTime);
     void set_active(Cycles curTime);
     void set_outvc(int outvc)               { m_output_vc = outvc; }
