@@ -1,3 +1,4 @@
+# Derived from the following by Brian Lebiednik
 # Copyright (c) 2010 Advanced Micro Devices, Inc.
 # All rights reserved.
 #
@@ -60,6 +61,11 @@ class Datacenter(SimpleTopology):
             for j in range(switches):
                 for i in range(routers_per_switch:
                     int_links = IntLink(link_id=(link_count+1), node_a=routers[k], node_b=xbar[j])
+        #Adds the nodes to the appropriate crossbas
+        #Need to connect the cross bars num_ext_links
+        for i in range(switches-1):
+            int_links = IntLink(link_id=(link_count+1, node_a=xbar[i], node_b=xbar[i+1])
+
         #int_links = [IntLink(link_id=(link_count+i),
         #                     node_a=routers[i], node_b=xbar)
         #                for i in range(len(self.nodes))]
