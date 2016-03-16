@@ -37,9 +37,10 @@ using namespace LibUtil;
 
 static PyObject *DSENTError;
 static PyObject* dsent_initialize(PyObject*, PyObject*);
+static PyObject* dsent_run(PyObject*, PyObject*);
 static PyObject* dsent_finalize(PyObject*, PyObject*);
-static PyObject* dsent_computeRouterPowerAndArea(PyObject*, PyObject*);
-static PyObject* dsent_computeLinkPower(PyObject*, PyObject*);
+static PyObject* dsent_updateRouterConfigStats(PyObject*, PyObject*);
+static PyObject* dsent_updateLinkConfigStats(PyObject*, PyObject*);
 
 // Create DSENT configuration map.  This map is supposed to retain all
 // the information between calls to initialize() and finalize().
@@ -49,16 +50,19 @@ DSENT::Model *ms_model;
 
 static PyMethodDef DSENTMethods[] = {
     {"initialize", dsent_initialize, METH_O,
-     "initialize dsent using a config file."},
+     "initialize dsent using the default config file"},
+
+    {"run", dsent_run, METH_NOARGS,
+     "run dsent for the configuration"},
 
     {"finalize", dsent_finalize, METH_NOARGS,
      "finalize dsent by dstroying the config object"},
 
-    {"computeRouterPowerAndArea", dsent_computeRouterPowerAndArea,
-     METH_VARARGS, "compute quantities related power consumption of a router"},
+    {"updateRouterConfigStats", dsent_updateRouterConfigStats,
+     METH_VARARGS, "update router defaults in config file"},
 
-    {"computeLinkPower", dsent_computeLinkPower, 
-     METH_VARARGS, "compute quantities related power consumption of a link"},
+    {"updateLinkConfigStats", dsent_updateLinkConfigStats, 
+     METH_VARARGS, "update link defailts in config file"},
 
     {NULL, NULL, 0, NULL}
 };
@@ -90,9 +94,37 @@ dsent_initialize(PyObject *self, PyObject *arg)
     }
 
     // Initialize DSENT
-    ms_model = DSENT::initialize(config_file, params);
+    DSENT::initialize(config_file, params);
     Py_RETURN_NONE;
 }
+
+static PyObject *
+dsent_run(PyObject *self, PyObject *arg)
+{
+    // Build DSENT Router/Link Model
+    ms_model = DSENT::buildModel(params);
+
+    // Run DSENT
+    map<string, double> outputs;
+    DSENT::run(params, ms_model, outputs);
+
+    // Store outputs
+    PyObject *r = PyTuple_New(outputs.size());
+    int index = 0;
+
+    // Prepare the output.  The assumption is that all the output
+    for (const auto &it : outputs) {
+        PyObject *s = PyTuple_New(2);
+        PyTuple_SetItem(s, 0, PyString_FromString(it.first.c_str()));
+        PyTuple_SetItem(s, 1, PyFloat_FromDouble(it.second));
+
+        PyTuple_SetItem(r, index, s);
+        index++;
+    }
+
+    return r;
+}
+
 
 
 static PyObject *
@@ -106,8 +138,10 @@ dsent_finalize(PyObject *self, PyObject *args)
 
 
 static PyObject *
-dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
+dsent_updateRouterConfigStats(PyObject *self, PyObject *args)
 {
+    // Read configs/stats from python args and update params
+    const char* tech_model;
     uint64_t frequency;
     unsigned int flit_width_bits;
     unsigned int num_in_port;
@@ -133,7 +167,8 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     double clk_tree_wire_width_mult;
 
 
-    if (!PyArg_ParseTuple(args, "KIIIIIIIIIIIII", 
+    if (!PyArg_ParseTuple(args, "sKIIIIIIIIIIIII", 
+                          &tech_model,
                           &frequency,
                           &flit_width_bits,
                           &num_in_port,
@@ -163,10 +198,9 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     // In gem5, one of the VCs is a response (data) VC
     num_buffers_vec[num_vnet-1] = num_buffers_per_data_vc;
 
-    // DSENT outputs
-    map<string, double> outputs;
 
     // Overwrite default configs
+    params["ElectricalTechModelFilename"] = String(tech_model);
     params["Frequency"] = String(frequency);
     params["NumberBitsPerFlit"] = String(flit_width_bits);
     params["NumberInputPorts"] = String(num_in_port);
@@ -177,7 +211,7 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     params["NumberBuffersPerVirtualChannel"] =
         vectorToString<unsigned int>(num_buffers_vec);
 
-    // Update stats
+    // Add stats
     params["NumCycles"] = String(num_ticks);
     params["NumBufferWrites"] = String(num_buffer_writes);
     params["NumBufferReads"] = String(num_buffer_reads);
@@ -185,31 +219,17 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     params["NumSwOutportArbs"] = String(num_sw_out_arb);
     params["NumCrossbarTraversals"] = String(num_crossbar_traversals);
 
+    // Done
 
-    // Run DSENT
-    DSENT::run(params, ms_model, outputs);
-
-    // Store outputs
-    PyObject *r = PyTuple_New(outputs.size());
-    int index = 0;
-
-    // Prepare the output.  The assumption is that all the output
-    for (const auto &it : outputs) {
-        PyObject *s = PyTuple_New(2);
-        PyTuple_SetItem(s, 0, PyString_FromString(it.first.c_str()));
-        PyTuple_SetItem(s, 1, PyFloat_FromDouble(it.second));
-
-        PyTuple_SetItem(r, index, s);
-        index++;
-    }
-
-    return r;
+    Py_RETURN_NONE;
 }
 
 
 static PyObject *
-dsent_computeLinkPower(PyObject *self, PyObject *args)
+dsent_updateLinkConfigStats(PyObject *self, PyObject *args)
 {
+    // Read configs/stats from python args and update params
+    const char* tech_model;
     uint64_t frequency;
     unsigned int width_bits;
     float length;
@@ -218,8 +238,8 @@ dsent_computeLinkPower(PyObject *self, PyObject *args)
     unsigned int num_ticks;
     unsigned int num_traversals;
  
-
-    if (!PyArg_ParseTuple(args, "KIffII", 
+    if (!PyArg_ParseTuple(args, "sKIffII",
+                          &tech_model,
                           &frequency,
                           &width_bits,
                           &length,
@@ -234,37 +254,20 @@ dsent_computeLinkPower(PyObject *self, PyObject *args)
     assert(length > 0.0);
     assert(delay > 0.0);
  
-    // DSENT outputs
-    map<string, double> outputs;
-
     // Overwrite default configs
+    params["ElectricalTechModelFilename"] = String(tech_model);
     params["Frequency"]     = String(frequency);
     params["NumberBits"]    = String(width_bits);
     params["WireLength"]    = String(length);
     params["Delay"]         = String(delay);
 
-    // Update stats
+    // Add stats
     params["NumCycles"]     = String(num_ticks);
     params["NumLinkTraversals"] = String(num_traversals);
 
-    // Run DSENT
-    DSENT::run(params, ms_model, outputs);
+    // Done
 
-    // Store outputs
-    PyObject *r = PyTuple_New(outputs.size());
-    int index = 0;
-
-    // Prepare the output.  The assumption is that all the output
-    for (const auto &it : outputs) {
-        PyObject *s = PyTuple_New(2);
-        PyTuple_SetItem(s, 0, PyString_FromString(it.first.c_str()));
-        PyTuple_SetItem(s, 1, PyFloat_FromDouble(it.second));
-
-        PyTuple_SetItem(r, index, s);
-        index++;
-    }
-
-    return r;
+    Py_RETURN_NONE;
 }
 
 static PyObject *

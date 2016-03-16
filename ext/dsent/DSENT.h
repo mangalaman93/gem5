@@ -56,14 +56,16 @@ namespace DSENT
                 Model *ms_model) const;
     };
 
-    Model *initialize(const char *config_file_name,
+    void *initialize(const char *config_file_name,
                       std::map<String, String> &config);
 
-    void finalize(std::map<String, String> &config,
-                  Model *ms_model);
+    Model *buildModel(const std::map<String, String> &config);
 
     void run(const std::map<String, String> &config, Model *ms_model,
              std::map<std::string, double> &outputs);
+
+    void finalize(std::map<String, String> &config,
+                  Model *ms_model);
 } // namespace DSENT
 
 #endif // __DSENT_DSENT_H__

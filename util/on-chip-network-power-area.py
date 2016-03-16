@@ -92,6 +92,20 @@ def parseConfig(config_file):
     network_config['buffers_per_ctrl_vc'] = \
         config.getint("system.ruby.network", "buffers_per_ctrl_vc")
 
+    ## Update technology node
+    tech_model_path = "ext/dsent/tech/tech_models/"
+    tech = sys.argv[5]
+
+    if (tech == "45" or tech == "32" or tech == "22"):
+        network_config['tech_model'] = \
+            tech_model_path + "Bulk" + tech + "LVT.model"
+    elif (tech == "11"):
+        network_config['tech_model'] = \
+            tech_model_path + "TG" + tech + "LVT.model"
+    else:
+        print "Unknown Tech Model. Supported models: 45, 32, 22, 11"
+        exit(-1)
+
     return (config, network_config, routers, int_links, ext_links)
 
 def getRouterConfig(config, router, int_links, ext_links):
@@ -121,7 +135,7 @@ def getRouterConfig(config, router, int_links, ext_links):
     # FIXME: Clock period units are ns in tester, and ps in full-system
     # Make it consistent in gem5
     clock_period = getClock(router, config)
-    frequency = 1e9 / int(clock_period)
+    frequency = 1e12 / float(clock_period)
     router_config['frequency'] = int(frequency)
 
     return router_config
@@ -132,12 +146,12 @@ def getLinkConfig(config, link):
 
     # Frequency (Hz)
     clock_period = getClock(link + ".nls0", config)
-    frequency = 1e9 / int(clock_period)
+    frequency = 1e12 / float(clock_period)
     link_config['frequency'] = int(frequency)
 
     # Length (m)
     # FIXME: will be part of topology file and appear in config.ini
-    length = 1e-3
+    length = 4e-3
     link_config['length'] = float(length)
 
     # Delay (s)
@@ -192,7 +206,7 @@ def parseRouterStats(stats_file, router):
 
     return router_stats
 
-def parseLinkStats(stats_file):
+def parseLinkStats(stats_file, sim_ticks):
 
     try:
         lines = open(stats_file, 'r')
@@ -202,13 +216,21 @@ def parseLinkStats(stats_file):
 
     link_stats = {}
     for line in lines:
-        if re.search("total_link_utilization", line):
-            link_stats['activity'] = int(re.split('\s+', line)[1])
+        if re.search("avg_link_utilization", line):
+            link_stats['activity'] = \
+                int(float(re.split('\s+', line)[1]) * sim_ticks)
 
     return link_stats
 
 def getClock(obj, config):
 
+    # Use clock period specified from command line
+    # if available
+    if (len(sys.argv) > 6):
+        clock = sys.argv[6]
+        return clock
+
+    # Use clock period specified in config.ini
     if config.get(obj, "type") == "SrcClockDomain":
         return config.getint(obj, "clock")
 
@@ -222,11 +244,12 @@ def getClock(obj, config):
 
 
 ## Compute the power consumed by the given router
-def computeRouterPowerAndArea(network_config, router_config,\
+def updateRouterConfigStats(network_config, router_config,\
                               network_stats, router_stats):
     # DSENT Interface
 
     # Config
+    tech_model   = network_config['tech_model']
     num_vnet = network_config['num_vnet']
     flit_size_bits = network_config['flit_size_bits']
 
@@ -246,33 +269,33 @@ def computeRouterPowerAndArea(network_config, router_config,\
     crossbar_activity   = router_stats['crossbar_activity']
 
     # Run DSENT (calls function in ext/dsent/interface.cc)
-    print("|Router %s|" % router_config['router_id'])
+    print("\n|Router %s|" % router_config['router_id'])
 
-    power = dsent.computeRouterPowerAndArea(frequency,
-                                            flit_size_bits,
-                                            num_inports,
-                                            num_outports,
-                                            num_vnet,
-                                            vcs_per_vnet,
-                                            buffers_per_ctrl_vc,
-                                            buffers_per_data_vc,
-                                            sim_ticks,
-                                            buffer_writes,
-                                            buffer_reads,
-                                            sw_in_arb_activity,
-                                            sw_out_arb_activity,
-                                            crossbar_activity)
-
-    print ""
+    dsent.updateRouterConfigStats(tech_model,
+                                  frequency,
+                                  flit_size_bits,
+                                  num_inports,
+                                  num_outports,
+                                  num_vnet,
+                                  vcs_per_vnet,
+                                  buffers_per_ctrl_vc,
+                                  buffers_per_data_vc,
+                                  sim_ticks,
+                                  buffer_writes,
+                                  buffer_reads,
+                                  sw_in_arb_activity,
+                                  sw_out_arb_activity,
+                                  crossbar_activity)
 
 
 ## Compute the power consumed by the links
-def computeLinkPower(network_config, link_config, \
+def updateLinkConfigStats(network_config, link_config, \
                      network_stats, link_stats):
 
     # DSENT Interface
 
     # Config
+    tech_model  = network_config['tech_model']
     width_bits  = network_config['flit_size_bits']
     frequency   = link_config['frequency']
     length      = link_config['length']
@@ -283,22 +306,45 @@ def computeLinkPower(network_config, link_config, \
     activity    = link_stats['activity']
 
     # Run DSENT
-    print("|All Links|")
+    print("\n|All Links|")
 
-    power = dsent.computeLinkPower(frequency,
-                                   width_bits,
-                                   length,
-                                   delay,
-                                   sim_ticks,
-                                   activity)
-    print ""
+    dsent.updateLinkConfigStats(tech_model,
+                                frequency,
+                                width_bits,
+                                length,
+                                delay,
+                                sim_ticks,
+                                activity)
 
 # This script parses the config.ini and the stats.txt from a run and
 # generates the power and the area of the on-chip network using DSENT
 def main():
-    if len(sys.argv) != 5:
-        print("Usage: ", sys.argv[0], " <gem5 root directory> " \
-              "<simulation directory> <router config file> <link config file>")
+    if len(sys.argv) < 6:
+        print("\nUsage: python ./" + sys.argv[0] + " <gem5 root directory>" \
+              " <simulation directory> " \
+              " <dsent router config file> <dsent link config file>" \
+              " <technology node>" \
+              " [<clock period in ps> (optional)]\n"
+              "Note: supported tech nodes: 45, 32, 22, and 11.\n" \
+              "If clock period is not specified, it will be read from " \
+               "simulation directory/config.ini and can be different for "\
+               "each router and link")
+        print("\nExample: python ./" + sys.argv[0] + " . m5out " \
+              "ext/dsent/configs/garnet_router.cfg " \
+              "ext/dsent/configs/garnet_link.cfg " \
+              "32 500\n" \
+              "This will model 500ps (2GHz) at 32nm")
+        exit(-1)
+
+    tech = sys.argv[5]
+    if (not(tech == "45" or tech == "32" or tech == "22" or tech == "11")):
+        print("Error!! DSENT only supports 45nm (bulk), 32nm (bulk), "\
+               " 22nm (bulk), and 11nm (tri-gate) models currently.\n"\
+               "To model some other technology, add a model in " \
+               "ext/dsent/tech/tech_models.\n"
+               "To model photonic links, remove this warning, and update " \
+               + sys.argv[0] + " to run DSENT with photonics.model with the "\
+               "appropriate configs and stats")
         exit(-1)
 
     print("WARNING: configuration files for DSENT and McPAT are separate. " \
@@ -314,48 +360,67 @@ def main():
     ### Parse Network Stats
     network_stats = parseNetworkStats(stats_file)
 
-    ### Compute Router Power from DSENT
-
-    # Initialize DSENT with a configuration file
+    ### Run DSENT
     router_config_default = sys.argv[3]
+    link_config_default = sys.argv[4]
+
+    if not os.path.isfile(router_config_default):
+        print("ERROR: router config file '", router_config_default, "' not found")
+        sys.exit(1)
+
+    if not os.path.isfile(link_config_default):
+        print("ERROR: link config file '", link_config_default, "' not found")
+        sys.exit(1)
+
+    ## Router Power and Area
+
+    # Initialize DSENT with the router configuration file
     dsent.initialize(router_config_default)
 
+    # Update default configs for each router and run
     # Compute the power consumed by the routers
     for router in routers:
         #frequency = getClock(router, all_config)
         router_config = getRouterConfig(all_config, router, \
             int_links, ext_links)
         router_stats = parseRouterStats(stats_file, router)
-        computeRouterPowerAndArea(network_config, router_config, \
-                                  network_stats, router_stats)
+        updateRouterConfigStats(network_config, router_config, \
+                                network_stats, router_stats)
+
+        # Run DSENT
+        router_power_area = dsent.run()
 
     # Finalize DSENT
     dsent.finalize()
 
-    ### Compute Link Power from DSENT
+    ## Link Power
 
     # Initialize DSENT with a configuration file
-    link_config_default = sys.argv[4]
     dsent.initialize(link_config_default)
 
     for link in int_links:
         link_config = getLinkConfig(all_config, link)
 #       link_stats = parseLinkStats(stats_file, link)
-#       computeLinkPower(link, link_stats, frequency)
+#       updateLinkConfigStats(link, link_stats, frequency)
 
     for link in ext_links:
         link_config = getLinkConfig(all_config, link)
 #        link_stats = parseLinkStats(stats_file, link)
-#        computeLinkPower(link, link_stats, frequency)
+#        updateLinkConfigStats(link, link_stats, frequency)
 
 
-    # Compute the power consumed by the links
+    # Update default configs file for links and run
     # (Stats file print total link activity rather than per link)
     # If per link power is required, garnet should print out activity
-    # for each link, and computeLinkPower should be called for each
-    # link by uncommenting the link_stats and computeLinkPower lines above
-    link_stats = parseLinkStats(stats_file)
-    computeLinkPower(network_config, link_config, network_stats, link_stats)
+    # for each link, and updateLinkConfigStats should be called for each
+    # link by uncommenting the link_stats and updateLinkConfigStats lines above
+    sim_ticks = network_stats['sim_ticks']
+    link_stats = parseLinkStats(stats_file, sim_ticks)
+    updateLinkConfigStats(network_config, link_config, \
+                          network_stats, link_stats)
+
+    # Run DSENT
+    link_power = dsent.run()
 
     # Finalize DSENT
     dsent.finalize()
