@@ -57,8 +57,8 @@ static PyMethodDef DSENTMethods[] = {
     {"computeRouterPowerAndArea", dsent_computeRouterPowerAndArea,
      METH_VARARGS, "compute quantities related power consumption of a router"},
 
-    {"computeLinkPower", dsent_computeLinkPower, METH_O,
-     "compute quantities related power consumption of a link"},
+    {"computeLinkPower", dsent_computeLinkPower, 
+     METH_VARARGS, "compute quantities related power consumption of a link"},
 
     {NULL, NULL, 0, NULL}
 };
@@ -109,13 +109,21 @@ static PyObject *
 dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
 {
     uint64_t frequency;
+    unsigned int flit_width_bits;
     unsigned int num_in_port;
     unsigned int num_out_port;
-    unsigned int num_vclass;
-    unsigned int num_vchannels;
-    unsigned int num_buffers;
+    unsigned int num_vnet;
+    unsigned int num_vcs_per_vnet;
+    unsigned int num_buffers_per_ctrl_vc;
+    unsigned int num_buffers_per_data_vc;
 
-    unsigned int flit_width;
+    unsigned int num_ticks;
+    unsigned int num_buffer_writes;
+    unsigned int num_buffer_reads;
+    unsigned int num_sw_in_arb;
+    unsigned int num_sw_out_arb;
+    unsigned int num_crossbar_traversals;
+
     const char *input_port_buffer_model;
     const char *crossbar_model;
     const char *sa_arbiter_model;
@@ -124,33 +132,59 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     const char *clk_tree_wire_layer;
     double clk_tree_wire_width_mult;
 
-    // Read the arguments sent from the python script
-    if (!PyArg_ParseTuple(args, "KIIIIII", &frequency, &num_in_port,
-                          &num_out_port, &num_vclass, &num_vchannels,
-                          &num_buffers, &flit_width)) {
+
+    if (!PyArg_ParseTuple(args, "KIIIIIIIIIIIII", 
+                          &frequency,
+                          &flit_width_bits,
+                          &num_in_port,
+                          &num_out_port,
+                          &num_vnet,
+                          &num_vcs_per_vnet,
+                          &num_buffers_per_ctrl_vc,
+                          &num_buffers_per_data_vc,
+                          &num_ticks,
+                          &num_buffer_writes,
+                          &num_buffer_reads,
+                          &num_sw_in_arb,
+                          &num_sw_out_arb,
+                          &num_crossbar_traversals)) { 
         Py_RETURN_NONE;
     }
 
     assert(frequency > 0.0);
+    assert(flit_width_bits != 0);
     assert(num_in_port != 0);
     assert(num_out_port != 0);
-    assert(num_vclass != 0);
-    assert(flit_width != 0);
+    assert(num_vnet != 0);
+    assert(num_vcs_per_vnet != 0);
 
-    vector<unsigned int> num_vchannels_vec(num_vclass, num_vchannels);
-    vector<unsigned int> num_buffers_vec(num_vclass, num_buffers);
+    vector<unsigned int> num_vc_vec(num_vnet, num_vcs_per_vnet);
+    vector<unsigned int> num_buffers_vec(num_vnet, num_buffers_per_ctrl_vc);
+    // In gem5, one of the VCs is a response (data) VC
+    num_buffers_vec[num_vnet-1] = num_buffers_per_data_vc;
+
     // DSENT outputs
     map<string, double> outputs;
 
+    // Overwrite default configs
     params["Frequency"] = String(frequency);
+    params["NumberBitsPerFlit"] = String(flit_width_bits);
     params["NumberInputPorts"] = String(num_in_port);
     params["NumberOutputPorts"] = String(num_out_port);
-    params["NumberVirtualNetworks"] = String(num_vclass);
+    params["NumberVirtualNetworks"] = String(num_vnet);
     params["NumberVirtualChannelsPerVirtualNetwork"] =
-        vectorToString<unsigned int>(num_vchannels_vec);
+        vectorToString<unsigned int>(num_vc_vec);
     params["NumberBuffersPerVirtualChannel"] =
         vectorToString<unsigned int>(num_buffers_vec);
-    params["NumberBitsPerFlit"] = String(flit_width);
+
+    // Update stats
+    params["NumCycles"] = String(num_ticks);
+    params["NumBufferWrites"] = String(num_buffer_writes);
+    params["NumBufferReads"] = String(num_buffer_reads);
+    params["NumSwInportArbs"] = String(num_sw_in_arb);
+    params["NumSwOutportArbs"] = String(num_sw_out_arb);
+    params["NumCrossbarTraversals"] = String(num_crossbar_traversals);
+
 
     // Run DSENT
     DSENT::run(params, ms_model, outputs);
@@ -174,18 +208,44 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
 
 
 static PyObject *
-dsent_computeLinkPower(PyObject *self, PyObject *arg)
+dsent_computeLinkPower(PyObject *self, PyObject *args)
 {
-    uint64_t frequency = PyLong_AsLongLong(arg);
+    uint64_t frequency;
+    unsigned int width_bits;
+    float length;
+    float delay;
 
-    // Read the arguments sent from the python script
-    if (frequency == -1) {
+    unsigned int num_ticks;
+    unsigned int num_traversals;
+ 
+
+    if (!PyArg_ParseTuple(args, "KIffII", 
+                          &frequency,
+                          &width_bits,
+                          &length,
+                          &delay,
+                          &num_ticks,
+                          &num_traversals)) {
         Py_RETURN_NONE;
     }
 
+    assert(frequency > 0.0);
+    assert(width_bits != 0);
+    assert(length > 0.0);
+    assert(delay > 0.0);
+ 
     // DSENT outputs
     map<string, double> outputs;
-    params["Frequency"] = String(frequency);
+
+    // Overwrite default configs
+    params["Frequency"]     = String(frequency);
+    params["NumberBits"]    = String(width_bits);
+    params["WireLength"]    = String(length);
+    params["Delay"]         = String(delay);
+
+    // Update stats
+    params["NumCycles"]     = String(num_ticks);
+    params["NumLinkTraversals"] = String(num_traversals);
 
     // Run DSENT
     DSENT::run(params, ms_model, outputs);
