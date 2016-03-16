@@ -34,6 +34,8 @@ file(GLOB_RECURSE SRCS  "*.h" "*.cc")
 add_library(dsent MODULE ${SRCS})
 
 SET(PYTHON_CONFIG "python-config")
+SET(CMAKE_C_COMPILER "/tools/linsoft/gcc474/bin/gcc")
+SET(CMAKE_CXX_COMPILER "/tools/linsoft/gcc474/bin/g++")
 
 # add the binary tree to the search path for include files
 include_directories("${CMAKE_SOURCE_DIR}" "`${PYTHON_CONFIG} --includes`")
