@@ -34,6 +34,7 @@ class BasicLink(SimObject):
     type = 'BasicLink'
     cxx_header = "mem/ruby/network/BasicLink.hh"
     link_id = Param.Int("ID in relation to other links")
+    #Here is where we will edit the cycles of the links
     latency = Param.Cycles(1, "latency")
     # The following banwidth factor does not translate to the same value for
     # both the simple and Garnet models.  For the most part, the bandwidth
