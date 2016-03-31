@@ -113,10 +113,35 @@ namespace DSENT
         cout << "==============" << endl;
     }
 
-    static Model *buildModel(const map<String, String> &params,
-                             TechModel *tech_model)
+    static TechModel* constructTechModel(const map<String, String>& params)
     {
-        // Create the model specified
+        // Allocate static TechModel instance
+        const String& electrical_tech_model_filename =
+            params.at("ElectricalTechModelFilename");
+
+        TechModel* tech_model = new TechModel();
+        tech_model->readFile(electrical_tech_model_filename);
+
+        if (params.count("PhotonicTechModelFilename") != 0) {
+            const String& photonic_tech_model_filename =
+                params.at("PhotonicTechModelFilename");
+            tech_model->readFile(photonic_tech_model_filename);
+        }
+
+        // Allocate static StdCellLib instance
+        StdCellLib* std_cell_lib = new StdCellLib(tech_model);
+
+        // Set the StdCellLib pointer in static TechModel instance
+        tech_model->setStdCellLib(std_cell_lib);
+        return tech_model;
+    }
+
+    Model *buildModel(const map<String, String> &params)
+    {
+        // Create the Tech Model
+        TechModel *tech_model = constructTechModel(params);
+
+        // Create the router/link model specified
         const String& model_name = params.at("ModelName");
         Model *ms_model = ModelGen::createModel(model_name, model_name,
                                                 tech_model);
@@ -251,42 +276,13 @@ namespace DSENT
         }
     }
 
-    static TechModel* constructTechModel(const map<String, String>& params)
-    {
-        // Allocate static TechModel instance
-        const String& electrical_tech_model_filename =
-            params.at("ElectricalTechModelFilename");
-
-        TechModel* tech_model = new TechModel();
-        tech_model->readFile(electrical_tech_model_filename);
-
-        if (params.count("PhotonicTechModelFilename") != 0) {
-            const String& photonic_tech_model_filename =
-                params.at("PhotonicTechModelFilename");
-            tech_model->readFile(photonic_tech_model_filename);
-        }
-
-        // Allocate static StdCellLib instance
-        StdCellLib* std_cell_lib = new StdCellLib(tech_model);
-
-        // Set the StdCellLib pointer in static TechModel instance
-        tech_model->setStdCellLib(std_cell_lib);
-        return tech_model;
-    }
-
-    Model *initialize(const char *config_file_name, map<String, String> &config)
+    void *initialize(const char *config_file_name, map<String, String> &config)
     {
         // Init the log file
         Log::allocate("/tmp/dsent.log");
 
         // Init the config file
         LibUtil::readFile(config_file_name, config);
-
-        // Overwrite the technology file
-        TechModel *tech_model = constructTechModel(config);
-
-        // Build the specified model in the config file
-        return buildModel(config, tech_model);
     }
 
     void finalize(map<String, String> &config, Model *ms_model)
