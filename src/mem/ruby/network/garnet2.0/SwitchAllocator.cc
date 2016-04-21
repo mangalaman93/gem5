@@ -29,12 +29,20 @@
  */
 
 #include "mem/ruby/network/garnet2.0/SwitchAllocator.hh"
-
+#include "mem/ruby/network/garnet2.0/NetworkInterface.hh"
 #include "debug/RubyNetwork.hh"
 #include "mem/ruby/network/garnet2.0/GarnetNetwork.hh"
 #include "mem/ruby/network/garnet2.0/InputUnit.hh"
 #include "mem/ruby/network/garnet2.0/OutputUnit.hh"
 #include "mem/ruby/network/garnet2.0/Router.hh"
+#include "mem/ruby/network/MessageBuffer.hh"
+#include "mem/ruby/network/garnet2.0/flitBuffer.hh"
+#include "mem/ruby/slicc_interface/Message.hh"
+#include "base/stl_helpers.hh"
+#include "base/cast.hh"
+
+using namespace std;
+using m5::stl_helpers::deletePointers;
 
 SwitchAllocator::SwitchAllocator(Router *router)
     : Consumer(router)
@@ -91,6 +99,8 @@ SwitchAllocator::arbitrate_inports()
 {
     // Select a VC from each input in a round robin manner
     // Independent arbiter at each input port
+  //  NetworkLink *inNetLink =  in_link;
+ //   flit *t_flit = inNetLink->consumeLink();
     for (int inport = 0; inport < m_num_inports; inport++) {
         int invc = m_round_robin_invc[inport];
 
@@ -115,6 +125,12 @@ SwitchAllocator::arbitrate_inports()
                     m_vc_winners[outport][inport]= invc;
                     break; // got one vc winner for this port
                 }
+                 /*
+		Need to add code here to delete packet [ICN Project]
+		else
+		{ 
+		  delete t_flit;
+	        }*/
             }
 
             invc++;

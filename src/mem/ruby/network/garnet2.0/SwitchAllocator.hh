@@ -33,7 +33,7 @@
 
 #include <iostream>
 #include <vector>
-
+#include "mem/ruby/network/garnet2.0/NetworkInterface.hh"
 #include "mem/ruby/common/Consumer.hh"
 #include "mem/ruby/network/garnet2.0/CommonTypes.hh"
 

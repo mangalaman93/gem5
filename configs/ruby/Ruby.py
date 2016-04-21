@@ -71,7 +71,7 @@ def define_options(parser):
                       help="the number of rows in 2D (mesh/torus) topology")
     parser.add_option("--network", type="choice", default="simple",
                       choices=['simple', 'garnet-fixed-pipeline', 'garnet2.0'], help="'simple' | 'garnet1.0'|'garnet2.0'")
-    parser.add_option("--num-pipe-stages", action="store", type="int", default=1,
+    parser.add_option("--num-pipe-stages", action="store", type="int", default=5,
                       help="number of pipeline stages in the garnet router. Has to be >= 1.")
     parser.add_option("--channel-width-bits", action="store", type="int", default=128,
                       help="channel width in bits for all links inside garnet network.")

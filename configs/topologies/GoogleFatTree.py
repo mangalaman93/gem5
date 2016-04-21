@@ -42,14 +42,20 @@ class GoogleFatTree(SimpleTopology):
         nodes = self.nodes
 
         k = options.num_cpus
+        #print "cpu " + str(cpu)
+        #k = (4*options.num_cpus)**(1./3.)
+	
+        #print "k " + str(k) 
+	#assert( k**3/4 = options.num_cpus);
+
         assert((k/2) * 2 == k);
 
         # K**3/4 - number of hosts (one host per router)
         # k*k    - aggregation routers
         # k*k/4  - core routers
         num_nodes = k**3/4
-        num_routers = num_nodes + k*k + k*k/4
-
+        num_routers = int(num_nodes + k*k + k*k/4)
+        #print "num_routers " + str(num_routers) 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
         cntrls_per_router, remainder = divmod(num_routers, num_routers)
@@ -101,18 +107,20 @@ class GoogleFatTree(SimpleTopology):
                     int_links.append(IntLink(link_id=link_count,
                                              node_a=routers[edge_router_id],
                                              node_b=routers[host_router_id],
+					     latency=10,
                                              weight=1))
                     link_count += 1
-                    print "Router " + str(edge_router_id) + " created a link to " + str(host_router_id)
+                    #print "Router " + str(edge_router_id) + " created a link to " + str(host_router_id)
 
                 for aggr_index in xrange(0, k/2):
                     aggr_router_id = num_nodes + pod_index*k + k/2 + aggr_index
                     int_links.append(IntLink(link_id=link_count,
                                              node_a=routers[edge_router_id],
                                              node_b=routers[aggr_router_id],
+					     latency=10,
                                              weight=1))
                     link_count += 1
-                    print "Router " + str(edge_router_id) + " created a link to " + str(aggr_router_id)
+                    #print "Router " + str(edge_router_id) + " created a link to " + str(aggr_router_id)
 
             for aggr_index in xrange(0, k/2):
                 aggr_router_id = num_nodes + pod_index*k + k/2 + aggr_index
@@ -121,8 +129,9 @@ class GoogleFatTree(SimpleTopology):
                     int_links.append(IntLink(link_id=link_count,
                                              node_a=routers[aggr_router_id],
                                              node_b=routers[core_router_id],
+					     latency=10,
                                              weight=1))
                     link_count += 1
-                    print "Router " + str(aggr_router_id) + " created a link to " + str(core_router_id)
+                    #print "Router " + str(aggr_router_id) + " created a link to " + str(core_router_id)
 
         network.int_links = int_links

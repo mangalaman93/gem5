@@ -35,7 +35,7 @@ class BaseGarnetNetwork(RubyNetwork):
     type = 'BaseGarnetNetwork'
     cxx_header = "mem/ruby/network/garnet/BaseGarnetNetwork.hh"
     abstract = True
-    ni_flit_size = Param.Int(16, "network interface flit size in bytes")
+    ni_flit_size = Param.Int(64, "network interface flit size in bytes")
     vcs_per_vnet = Param.Int(4, "virtual channels per virtual network");
     routing_algorithm = Param.Int(1, " ");
     num_rows = Param.Int(0, "number of rows if 2D (mesh/torus/..) topology");

@@ -276,7 +276,7 @@ NetworkTest::generatePkt()
     unsigned randomReqType = random_mt.random(0, 2);
 
     // TK: Added to inject only in vnet 0 for ICN course Lab 1
-    randomReqType = 0;
+   // randomReqType = 0; //commented out for project ICN
     //
 
     if (randomReqType == 0) {

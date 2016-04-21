@@ -1,0 +1,7 @@
+
+packets_injected = 7967                      
+packets_received = 7950                      
+average_packet_latency = 213.747170                      
+flits_injected = 7967                      
+flits_received = 7950                      
+average_flit_latency = 213.747170                      

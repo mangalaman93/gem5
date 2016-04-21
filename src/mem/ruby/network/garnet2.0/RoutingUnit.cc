@@ -34,6 +34,8 @@
 #include "mem/ruby/network/garnet2.0/InputUnit.hh"
 #include "mem/ruby/network/garnet2.0/Router.hh"
 #include "mem/ruby/slicc_interface/Message.hh"
+#include <vector>
+using std::vector;
 
 RoutingUnit::RoutingUnit(Router *router)
 {
@@ -59,9 +61,11 @@ RoutingUnit::lookupRoutingTable(NetDest msg_destination)
 {
     int output_link = -1;
     int min_weight = INFINITE_;
-
+    vector<int> arr;
+    int randomIndex;
     for (int link = 0; link < m_routing_table.size(); link++) {
         if (msg_destination.intersectionIsNotEmpty(m_routing_table[link])) {
+	  arr.push_back(link);
             if (m_weight_table[link] >= min_weight)
                 continue;
             output_link = link;
@@ -74,7 +78,9 @@ RoutingUnit::lookupRoutingTable(NetDest msg_destination)
         exit(0);
     }
 
-    return output_link;
+   randomIndex = rand() % arr.size();
+   return arr[randomIndex];
+    //return output_link;
 }
 
 
@@ -121,7 +127,26 @@ RoutingUnit::outportCompute(RouteInfo route, int inport, PortDirection inport_di
     assert(outport != -1);
     return outport;
 }
-
+/*
+int
+RoutingUnit::outportComputeGoogle(RouteInfo route,
+                              int inport,
+                              PortDirection inport_dirn)
+{
+    PortDirection outport_dirn = UNKNOWN_;
+    
+    int k = m_router->get_net_ptr()->getNumRows();
+    int my_id = m_router->get_id();
+     int dest_id = route.dest_router;
+     
+    if (my_id >= (k^3)/2 ||  my_id < (k^3)/2 +k)
+    {
+      int agg_id = (k^3)/4 + dest_id + (2*my_id) / k - k^2/2 + 5*k / 2;
+    }
+    
+    return agg_id;
+}
+*/
 int
 RoutingUnit::outportComputeXY(RouteInfo route,
                               int inport,
