@@ -181,6 +181,9 @@ class GarnetNetwork : public Network
     Stats::Formula m_avg_flit_queueing_latency;
     Stats::Formula m_avg_flit_latency;
 
+    Stats::Scalar m_total_ext_in_link_utilization;
+    Stats::Scalar m_total_ext_out_link_utilization;
+    Stats::Scalar m_total_int_link_utilization;
     Stats::Scalar m_average_link_utilization;
     Stats::Vector m_average_vc_load;
 
