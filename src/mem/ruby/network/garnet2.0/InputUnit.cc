@@ -106,11 +106,24 @@ InputUnit::wakeup()
         m_num_buffer_writes[vnet]++;
         m_num_buffer_reads[vnet]++;
 
-        // This is the first-stage of the router
-        // Wait for (m_pipeline_delay - 1) cycles before
-        // performing Switch Allocation
-        Cycles wait_time = m_pipeline_delay - Cycles(1);
-        t_flit->advance_stage(SA_, m_router->curCycle() + wait_time);
+        if (m_pipeline_delay == 1)
+        {
+            // 1-cycle router
+            // Flit goes for SA directly
+            t_flit->advance_stage(SA_, m_router->curCycle());
+        }
+        else
+        {
+            assert(m_pipeline_delay > 1);
+            // Router delay is modeled by making flit wait in buffer for
+            // (m_pipeline_delay cycles - 1) cycles before going for SA
+
+            Cycles wait_time = m_pipeline_delay - Cycles(1);
+            t_flit->advance_stage(SA_, m_router->curCycle() + wait_time);
+
+            // Wakeup the router in that cycle to perform SA
+            m_router->schedule_wakeup(Cycles(wait_time));
+        }
     }
 }
 
