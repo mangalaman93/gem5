@@ -36,6 +36,7 @@
 #include "base/stl_helpers.hh"
 #include "mem/ruby/common/NetDest.hh"
 #include "mem/ruby/network/MessageBuffer.hh"
+#include "mem/ruby/network/garnet2.0/CommonTypes.hh"
 #include "mem/ruby/network/garnet2.0/CreditLink.hh"
 #include "mem/ruby/network/garnet2.0/GarnetLink.hh"
 #include "mem/ruby/network/garnet2.0/NetworkInterface.hh"
@@ -160,6 +161,7 @@ GarnetNetwork::makeInLink(NodeID src, SwitchID dest, BasicLink* link,
 
     GarnetExtLink* garnet_link = safe_cast<GarnetExtLink*>(link);
     NetworkLink* net_link = garnet_link->m_network_links[direction];
+    net_link->setType(EXT_IN_);
     CreditLink* credit_link = garnet_link->m_credit_links[direction];
 
     m_networklinks.push_back(net_link);
@@ -187,6 +189,7 @@ GarnetNetwork::makeOutLink(SwitchID src, NodeID dest, BasicLink* link,
 
     GarnetExtLink* garnet_link = safe_cast<GarnetExtLink*>(link);
     NetworkLink* net_link = garnet_link->m_network_links[direction];
+    net_link->setType(EXT_OUT_);
     CreditLink* credit_link = garnet_link->m_credit_links[direction];
 
     m_networklinks.push_back(net_link);
@@ -213,6 +216,7 @@ GarnetNetwork::makeInternalLink(SwitchID src, SwitchID dest,
 {
     GarnetIntLink* garnet_link = safe_cast<GarnetIntLink*>(link);
     NetworkLink* net_link = garnet_link->m_network_links[direction];
+    net_link->setType(INT_);
     CreditLink* credit_link = garnet_link->m_credit_links[direction];
 
     m_networklinks.push_back(net_link);
@@ -347,6 +351,9 @@ GarnetNetwork::regStats()
     m_avg_hops = m_total_hops / sum(m_flits_received);
 
     // Links
+    m_total_ext_in_link_utilization.name(name() + ".ext_in_link_utilization");
+    m_total_ext_out_link_utilization.name(name() + ".ext_out_link_utilization");
+    m_total_int_link_utilization.name(name() + ".int_link_utilization");
     m_average_link_utilization.name(name() + ".avg_link_utilization");
 
     m_average_vc_load
@@ -360,15 +367,25 @@ void
 GarnetNetwork::collateStats()
 {
     RubySystem *rs = params()->ruby_system;
-    double timeelta = double(curCycle() - rs->getStartCycle());
+    double time_delta = double(curCycle() - rs->getStartCycle());
 
     for (int i = 0; i < m_networklinks.size(); i++) {
+        link_type type = m_networklinks[i]->getType();
+        int activity = m_networklinks[i]->getLinkUtilization();
+
+        if (type == EXT_IN_)
+            m_total_ext_in_link_utilization += activity;
+        else if (type == EXT_OUT_)
+            m_total_ext_out_link_utilization += activity;
+        else if (type == INT_)
+            m_total_int_link_utilization += activity;
+
         m_average_link_utilization +=
-            (double(m_networklinks[i]->getLinkUtilization())) / timeelta;
+            (double(activity) / time_delta);
 
         vector<unsigned int> vc_load = m_networklinks[i]->getVcLoad();
         for (int j = 0; j < vc_load.size(); j++) {
-            m_average_vc_load[j] += ((double)vc_load[j] / timeelta);
+            m_average_vc_load[j] += ((double)vc_load[j] / time_delta);
         }
     }
 

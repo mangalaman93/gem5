@@ -34,6 +34,7 @@
 
 NetworkLink::NetworkLink(const Params *p)
     : ClockedObject(p), Consumer(this), m_id(p->link_id),
+      m_type(NUM_LINK_TYPES_),
       m_latency(p->link_latency),
       linkBuffer(new flitBuffer()), link_consumer(nullptr),
       link_srcQueue(nullptr), m_link_utilized(0),
