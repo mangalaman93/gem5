@@ -31,8 +31,8 @@ from m5.objects import *
 
 from BaseTopology import SimpleTopology
 
-class GoogleFatTree(SimpleTopology):
-    description='GoogleFatTree'
+class GoogleFatTree_m(SimpleTopology):
+    description='GoogleFatTree_m'
 
     def __init__(self, controllers):
         self.nodes = controllers
@@ -40,8 +40,13 @@ class GoogleFatTree(SimpleTopology):
     # Makes a generic mesh assuming an equal number of cache and directory cntrls
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
+         
+        #print "nodes " + str(len(nodes))
 
         k = options.num_cpus
+
+	if (options.num_cpus == 16):
+               k = 4
         #print "cpu " + str(cpu)
         #k = (4*options.num_cpus)**(1./3.)
 	
@@ -58,7 +63,7 @@ class GoogleFatTree(SimpleTopology):
         #print "num_routers " + str(num_routers) 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
-        cntrls_per_router, remainder = divmod(num_routers, num_routers)
+        cntrls_per_router, remainder = divmod(len(nodes), options.num_cpus)
 
         # Create the routers in the mesh
         routers = [Router(router_id=i) for i in range(num_routers)]
@@ -80,12 +85,14 @@ class GoogleFatTree(SimpleTopology):
         # Connect each node to the appropriate router
         ext_links = []
         for (i, n) in enumerate(network_nodes):
-            cntrl_level, router_id = divmod(i, num_routers)
+            cntrl_level, router_id = divmod(i, options.num_cpus)
             assert(cntrl_level < cntrls_per_router)
             ext_links.append(ExtLink(link_id=link_count, ext_node=n,
                                     int_node=routers[router_id]))
             link_count += 1
 
+        #print "num_nodes " + str(len(network_nodes)) 
+        #print "rem " + str(len(remainder_nodes))
         # Connect the remainding nodes to router 0.  These should only be
         # DMA nodes.
         for (i, node) in enumerate(remainder_nodes):
@@ -96,9 +103,7 @@ class GoogleFatTree(SimpleTopology):
             link_count += 1
 
         network.ext_links = ext_links
-        print "nodes " + str(len(nodes)) 
-        print "num_nodes " + str(len(network_nodes)) 
-        print "rem " + str(len(remainder_nodes))
+
         # pod links
         int_links = []
         for pod_index in xrange(0, k):  # iterating over all pods
@@ -110,7 +115,7 @@ class GoogleFatTree(SimpleTopology):
                                              node_a=routers[edge_router_id],
                                              node_b=routers[host_router_id],
 					     latency=10,
-                                             weight=1))
+                                             weight=2))
                     link_count += 1
                     #print "Router " + str(edge_router_id) + " created a link to " + str(host_router_id)
 
@@ -120,7 +125,7 @@ class GoogleFatTree(SimpleTopology):
                                              node_a=routers[edge_router_id],
                                              node_b=routers[aggr_router_id],
 					     latency=10,
-                                             weight=1))
+                                             weight=2))
                     link_count += 1
                     #print "Router " + str(edge_router_id) + " created a link to " + str(aggr_router_id)
 
@@ -132,7 +137,7 @@ class GoogleFatTree(SimpleTopology):
                                              node_a=routers[aggr_router_id],
                                              node_b=routers[core_router_id],
 					     latency=10,
-                                             weight=1))
+                                             weight=2))
                     link_count += 1
                     #print "Router " + str(aggr_router_id) + " created a link to " + str(core_router_id)
 

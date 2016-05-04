@@ -93,7 +93,7 @@ InputUnit::wakeup()
             grant_outport(vc, outport);
 
         } else {
-            assert(m_vcs[vc]->get_state() == ACTIVE_);
+            assert(m_vcs[vc]->get_state() == ACTIVE_);	//[ICN Project] For implementing dropping of packets
         }
 
 

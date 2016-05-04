@@ -68,7 +68,8 @@ bool
 VirtualChannel::need_stage(flit_stage stage, Cycles time)
 {
     if (m_input_buffer->isReady(time)) {
-        assert(m_vc_state.first == ACTIVE_ && m_vc_state.second <= time);
+        assert(m_vc_state.first == ACTIVE_ && m_vc_state.second <= time); //  [ICN Project] Dropping of packets
+        assert(m_vc_state.second <= time);
         flit *t_flit = m_input_buffer->peekTopFlit();
         return(t_flit->is_stage(stage, time));
     }

@@ -89,7 +89,6 @@ SwitchAllocator::wakeup()
 {
     arbitrate_inports(); // First stage of allocation
     arbitrate_outports(); // Second stage of allocation
-
     clear_request_vector();
     check_for_wakeup();
 }
@@ -116,15 +115,15 @@ SwitchAllocator::arbitrate_inports()
             if (m_input_unit[inport]->need_stage(invc, SA_, m_router->curCycle()))
             {
                 int  outport = m_input_unit[inport]->get_outport(invc);
-                int  outvc   = m_input_unit[inport]->get_outvc(invc);
-                bool make_request = send_allowed(inport, invc, outport, outvc);
-                if (make_request)
-                {
+                int  outvc   = m_input_unit[inport]->get_outvc(invc);		 //  [ICN Project]
+                bool make_request = send_allowed(inport, invc, outport, outvc); // [ICN Project]
+               if (make_request)	//	[ICN Project]
+                {			//	[ICN Project]
                     m_input_arbiter_activity++;
                     m_port_requests[outport][inport] = true;
                     m_vc_winners[outport][inport]= invc;
                     break; // got one vc winner for this port
-                }
+               }			//	[ICN Project]
                  /*
 		Need to add code here to delete packet [ICN Project]
 		else
@@ -166,6 +165,7 @@ SwitchAllocator::arbitrate_outports()
                     // VC Allocation - select any free VC from outport
                     outvc = vc_allocate(outport, inport, invc);
                 }
+               // [ICN Project]             
 
                 // remove flit from Input VC
                 flit *t_flit = m_input_unit[inport]->getTopFlit(invc);
@@ -221,7 +221,7 @@ SwitchAllocator::arbitrate_outports()
 
                 // remove this request
                 m_port_requests[outport][inport] = false;
-
+	       
                 break; // got a input winner for this outport
             }
 
@@ -291,7 +291,7 @@ SwitchAllocator::vc_allocate(int outport, int inport, int invc)
 
     // Select a free VC from the output port
     int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), inport_dirn, outport_dirn);
-    assert(outvc != -1); // has to get a valid VC since it checked before performing SA
+    assert(outvc != -1); // has to get a valid VC since it checked before performing SA  [ICN Project]
     m_input_unit[inport]->grant_outvc(invc, outvc);
     return outvc;
 }

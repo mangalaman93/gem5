@@ -108,9 +108,9 @@ class AddrRange
           intlvMatch(_intlv_match)
     {
         // sanity checks
-        fatal_if(intlvBits && intlvMatch >= ULL(1) << intlvBits,
-                 "Match value %d does not fit in %d interleaving bits\n",
-                 intlvMatch, intlvBits);
+      //  fatal_if(intlvBits && intlvMatch >= ULL(1) << intlvBits,
+      //           "Match value %d does not fit in %d interleaving bits\n",
+      //           intlvMatch, intlvBits);
 
         // ignore the XOR bits if not interleaving
         if (intlvBits && xorHighBit) {

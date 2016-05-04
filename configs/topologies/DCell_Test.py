@@ -31,34 +31,26 @@ from m5.objects import *
 
 from BaseTopology import SimpleTopology
 
-class GoogleFatTree(SimpleTopology):
-    description='GoogleFatTree'
+class DCell_Test(SimpleTopology):
+    description='DCell_Test'
 
     def __init__(self, controllers):
         self.nodes = controllers
 
     # Makes a generic mesh assuming an equal number of cache and directory cntrls
+
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
 
-        k = options.num_cpus
-        #print "cpu " + str(cpu)
-        #k = (4*options.num_cpus)**(1./3.)
-	
-        #print "k " + str(k) 
-	#assert( k**3/4 = options.num_cpus);
+        num_routers = options.num_cpus
+        num_rows = options.num_rows
 
-        assert((k/2) * 2 == k);
-
-        # K**3/4 - number of hosts (one host per router)
-        # k*k    - aggregation routers
-        # k*k/4  - core routers
-        num_nodes = k**3/4
-        num_routers = int(num_nodes + k*k + k*k/4)
-        #print "num_routers " + str(num_routers) 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
-        cntrls_per_router, remainder = divmod(num_routers, num_routers)
+        cntrls_per_router, remainder = divmod(len(nodes), options.num_cpus)
+        assert(num_rows <= num_routers)
+        #num_columns = int(num_routers / num_rows)
+        #assert(num_columns * num_rows == num_routers)
 
         # Create the routers in the mesh
         routers = [Router(router_id=i) for i in range(num_routers)]
@@ -84,6 +76,7 @@ class GoogleFatTree(SimpleTopology):
             assert(cntrl_level < cntrls_per_router)
             ext_links.append(ExtLink(link_id=link_count, ext_node=n,
                                     int_node=routers[router_id]))
+            print "Router " + str(router_id) + " created a link to node" + str(n)
             link_count += 1
 
         # Connect the remainding nodes to router 0.  These should only be
@@ -96,44 +89,34 @@ class GoogleFatTree(SimpleTopology):
             link_count += 1
 
         network.ext_links = ext_links
-        print "nodes " + str(len(nodes)) 
-        print "num_nodes " + str(len(network_nodes)) 
-        print "rem " + str(len(remainder_nodes))
-        # pod links
+
+        # Create the mesh links.  First row (east-west) links then column
+        # (north-south) links
         int_links = []
-        for pod_index in xrange(0, k):  # iterating over all pods
-            for edge_index in xrange(0, k/2):  # iterting over all Edge layer switches in a pod
-                edge_router_id = num_nodes + pod_index*k + edge_index
-                for host_index in xrange(0, k/2):  # connecting host routers to edge layer
-                    host_router_id = pod_index*(k*k/4) + edge_index*k/2 + host_index
+        for row in xrange(num_rows):
+            for col in xrange(num_columns):
+                if (col + 1 < num_columns):
+                    east_id = col + (row * num_columns)
+                    west_id = (col + 1) + (row * num_columns)
                     int_links.append(IntLink(link_id=link_count,
-                                             node_a=routers[edge_router_id],
-                                             node_b=routers[host_router_id],
-					     latency=10,
-                                             weight=1))
+                                            node_a=routers[east_id],
+                                            node_b=routers[west_id],
+                                            node_a_port=3, # east port
+                                            node_b_port=1, # west port
+                                            weight=1))
                     link_count += 1
-                    #print "Router " + str(edge_router_id) + " created a link to " + str(host_router_id)
 
-                for aggr_index in xrange(0, k/2):
-                    aggr_router_id = num_nodes + pod_index*k + k/2 + aggr_index
+        for col in xrange(num_columns):
+            for row in xrange(num_rows):
+                if (row + 1 < num_rows):
+                    north_id = col + (row * num_columns)
+                    south_id = col + ((row + 1) * num_columns)
                     int_links.append(IntLink(link_id=link_count,
-                                             node_a=routers[edge_router_id],
-                                             node_b=routers[aggr_router_id],
-					     latency=10,
-                                             weight=1))
+                                            node_a=routers[north_id],
+                                            node_b=routers[south_id],
+                                            node_a_port=4, # north port
+                                            node_b_port=2, # south port
+                                            weight=2))
                     link_count += 1
-                    #print "Router " + str(edge_router_id) + " created a link to " + str(aggr_router_id)
-
-            for aggr_index in xrange(0, k/2):
-                aggr_router_id = num_nodes + pod_index*k + k/2 + aggr_index
-                for core_index in xrange(0, k/2):
-                    core_router_id = k**3/4 + k*k + aggr_index*k/2 + core_index
-                    int_links.append(IntLink(link_id=link_count,
-                                             node_a=routers[aggr_router_id],
-                                             node_b=routers[core_router_id],
-					     latency=10,
-                                             weight=1))
-                    link_count += 1
-                    #print "Router " + str(aggr_router_id) + " created a link to " + str(core_router_id)
 
         network.int_links = int_links

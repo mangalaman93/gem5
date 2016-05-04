@@ -31,8 +31,8 @@ from m5.objects import *
 
 from BaseTopology import SimpleTopology
 
-class Mesh(SimpleTopology):
-    description='Mesh'
+class DCell(SimpleTopology):
+    description='DCell'
 
     def __init__(self, controllers):
         self.nodes = controllers
@@ -42,15 +42,41 @@ class Mesh(SimpleTopology):
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
 
-        num_routers = options.num_cpus
-        num_rows = options.num_rows
+        
+        #num_rows = options.num_rows
+	num_of_DCell_modules = 5
+        num_of_servers_DCell0 = 4
+
+        if (options.num_cpus == 6):
+	    num_of_DCell_modules = 3
+            num_of_servers_DCell0 = 2
+
+        if (options.num_cpus == 2):
+	    num_of_DCell_modules = 2
+            num_of_servers_DCell0 = 1
+
+        if (options.num_cpus == 20):
+	    num_of_DCell_modules = 5
+            num_of_servers_DCell0 = 4
+
+        if (options.num_cpus == 30):
+	    num_of_DCell_modules = 6
+            num_of_servers_DCell0 = 5
+
+        if (options.num_cpus == 42):
+	    num_of_DCell_modules = 7
+            num_of_servers_DCell0 = 6
+
+        #g = num_of_servers_DCell0 * num_of_DCell_modules
+        num_routers = options.num_cpus + num_of_DCell_modules
 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
-        cntrls_per_router, remainder = divmod(len(nodes), num_routers)
-        assert(num_rows <= num_routers)
-        num_columns = int(num_routers / num_rows)
-        assert(num_columns * num_rows == num_routers)
+        cntrls_per_router, remainder = divmod(len(nodes), options.num_cpus)   #[ICN Project]
+        #cntrls_per_router, remainder = divmod(len(nodes), num_routers) 
+        #assert(num_rows <= num_routers)
+        #num_columns = int(num_routers / num_rows)
+        #assert(num_columns * num_rows == num_routers)
 
         # Create the routers in the mesh
         routers = [Router(router_id=i) for i in range(num_routers)]
@@ -68,21 +94,25 @@ class Mesh(SimpleTopology):
                 network_nodes.append(nodes[node_index])
             else:
                 remainder_nodes.append(nodes[node_index])
-
+        #print "rem " + str(len(remainder_nodes))
         # Connect each node to the appropriate router
         ext_links = []
         for (i, n) in enumerate(network_nodes):
-            cntrl_level, router_id = divmod(i, num_routers)
+            cntrl_level, router_id = divmod(i, options.num_cpus)    #[ICN Project]
+            #cntrl_level, router_id = divmod(i, num_routers) 
             assert(cntrl_level < cntrls_per_router)
             ext_links.append(ExtLink(link_id=link_count, ext_node=n,
                                     int_node=routers[router_id]))
-            print "Router " + str(router_id) + " created a link to node" + str(n)
+            #print "link_count " + str(link_count)
             link_count += 1
+            #print "node " + str(n) + " created a link to " + str(router_id)
 
-        # Connect the remainding nodes to router 0.  These should only be
-        # DMA nodes.
+        #print "network_nodes " + str(len(network_nodes))
+        #print "options.num_cpus" + str(options.num_cpus)
+         #Connect the remainding nodes to router 0.  These should only be
+         #DMA nodes.
         for (i, node) in enumerate(remainder_nodes):
-            assert(node.type == 'DMA_Controller')
+            #assert(node.type == 'DMA_Controller')		[ICN Project]
             assert(i < remainder)
             ext_links.append(ExtLink(link_id=link_count, ext_node=node,
                                     int_node=routers[0]))
@@ -90,33 +120,37 @@ class Mesh(SimpleTopology):
 
         network.ext_links = ext_links
 
-        # Create the mesh links.  First row (east-west) links then column
-        # (north-south) links
         int_links = []
-        for row in xrange(num_rows):
-            for col in xrange(num_columns):
-                if (col + 1 < num_columns):
-                    east_id = col + (row * num_columns)
-                    west_id = (col + 1) + (row * num_columns)
-                    int_links.append(IntLink(link_id=link_count,
-                                            node_a=routers[east_id],
-                                            node_b=routers[west_id],
-                                            node_a_port=3, # east port
-                                            node_b_port=1, # west port
+        for i in range(0,num_of_DCell_modules):
+            for j in range(0, num_of_servers_DCell0):
+                 int_links.append(IntLink(link_id=link_count,
+                                            node_a=routers[num_of_servers_DCell0*i + j],
+                                            node_b=routers[options.num_cpus+i],
+                                            latency=10,                                    
                                             weight=1))
-                    link_count += 1
-
-        for col in xrange(num_columns):
-            for row in xrange(num_rows):
-                if (row + 1 < num_rows):
-                    north_id = col + (row * num_columns)
-                    south_id = col + ((row + 1) * num_columns)
-                    int_links.append(IntLink(link_id=link_count,
-                                            node_a=routers[north_id],
-                                            node_b=routers[south_id],
-                                            node_a_port=4, # north port
-                                            node_b_port=2, # south port
-                                            weight=2))
-                    link_count += 1
+                 #print "link_count " + str(link_count)                
+                 link_count += 1
+                 #print "i " + str(i) 
+                 #print "j " + str(j)
+                 #print "Router " + str(num_of_servers_DCell0*i + j) + " created a link to " + str(options.num_cpus+i)
+                 
+        if (num_of_DCell_modules > 1):
+	  for i in range(0,num_of_DCell_modules+1):
+	      for j in range(0, num_of_servers_DCell0+1):                 
+		  if(j>i):
+		      int_links.append(IntLink(link_id=link_count,
+                                           node_a=routers[num_of_servers_DCell0*i + j-1],
+                                            node_b=routers[num_of_servers_DCell0*j + i],
+                                            latency=10,                                    
+                                            weight=1))
+                      #print "link_count " + str(link_count)
+		      link_count += 1
+		 #     #print "i " + str(i) 
+		     #print "j " + str(j)
+		      #print "Router " + str(num_of_servers_DCell0*i + j-1) + " created a link to " + str(num_of_servers_DCell0*j + i)
+                      
+                
 
         network.int_links = int_links
+
+

@@ -1,4 +1,3 @@
-#!/bin/csh
 
 set injectionrate = 2
 
@@ -44,5 +43,6 @@ while ($injectionrate <= 150)
 
    grep "average_packet_latency" network_stats.txt | sed 's/average_packet_latency = //' >> Google_lat_bitrev.txt
 end
+
 
 #set injectionrate = 2

@@ -58,5 +58,5 @@ void
 OutVcState::decrement_credit()
 {
     m_credit_count--;
-    assert(m_credit_count >= 0);
+    assert(m_credit_count >= 0);  // [ICN Project]
 }

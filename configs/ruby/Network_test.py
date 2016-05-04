@@ -102,7 +102,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
 
 
     phys_mem_size = sum(map(lambda r: r.size(), system.mem_ranges))
-    assert(phys_mem_size % options.num_dirs == 0)
+    #assert(phys_mem_size % options.num_dirs == 0)   [ICN Project]
     mem_module_size = phys_mem_size / options.num_dirs
 
     for i in xrange(options.num_dirs):
